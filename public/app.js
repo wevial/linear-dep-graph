@@ -306,7 +306,7 @@ function renderGraph() {
   const width = Math.max(viewportWidth, columns.length * columnWidth);
   const nodeWidth = columnWidth - 20;
   const nodeHeight = 96;
-  const rowGap = 10;
+  const rowGap = 24;
   const headerHeight = 72;
 
   for (const column of columns) {
@@ -544,11 +544,12 @@ function renderDetail() {
     (node) => node.id === state.selectedId,
   );
   if (!selected) {
-    elements.detail.hidden = true;
+    elements.detail.classList.remove("is-open");
+    elements.detail.setAttribute("aria-hidden", "true");
+    elements.detail.inert = true;
     return;
   }
 
-  elements.detail.hidden = false;
   elements.detailId.textContent = selected.id;
   elements.detailStatus.textContent = selected.status;
   elements.detailPriority.textContent = selected.priority;
@@ -559,13 +560,21 @@ function renderDetail() {
     relationIds(selected.id, "in"),
   );
   renderRelationList(elements.detailBlocks, relationIds(selected.id, "out"));
+  elements.detail.inert = false;
+  elements.detail.setAttribute("aria-hidden", "false");
+  elements.detail.classList.add("is-open");
 }
 
 function selectIssue(issueId) {
   state.selectedId = issueId;
   renderGraph();
   renderDetail();
-  elements.detail.scrollIntoView({ behavior: "smooth", block: "nearest" });
+}
+
+function clearSelection() {
+  state.selectedId = null;
+  renderGraph();
+  renderDetail();
 }
 
 elements.projectSelect.addEventListener("change", async () => {
@@ -589,11 +598,7 @@ elements.refresh.addEventListener("click", () =>
   loadGraph(elements.projectSelect.value, { force: true }),
 );
 
-elements.clearSelection.addEventListener("click", () => {
-  state.selectedId = null;
-  renderGraph();
-  renderDetail();
-});
+elements.clearSelection.addEventListener("click", clearSelection);
 
 for (const container of [
   elements.detailBlockedBy,
@@ -616,6 +621,10 @@ elements.graph.addEventListener("keydown", (event) => {
   if (!node) return;
   event.preventDefault();
   selectIssue(node.dataset.issueId);
+});
+
+document.addEventListener("keydown", (event) => {
+  if (event.key === "Escape" && state.selectedId) clearSelection();
 });
 
 let resizeFrame;

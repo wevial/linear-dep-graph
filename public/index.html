@@ -60,7 +60,13 @@
 
       <div id="message" class="message" hidden role="status" aria-live="polite"></div>
 
-      <section id="issue-detail" class="issue-detail" aria-live="polite" hidden>
+      <section
+        id="issue-detail"
+        class="issue-detail"
+        aria-live="polite"
+        aria-hidden="true"
+        inert
+      >
         <div class="issue-identity">
           <div class="issue-meta">
             <strong id="detail-id"></strong>
@@ -89,7 +95,7 @@
             rel="noreferrer"
           >Open in Linear ↗</a>
           <button id="clear-selection" class="text-button" type="button">
-            Clear trace
+            Close tray
           </button>
         </div>
       </section>
