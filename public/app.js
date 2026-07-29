@@ -322,28 +322,37 @@ function renderGraph() {
   svg.style.height = `${height}px`;
 
   const defs = makeSvg("defs");
-  const dependencyMarker = makeSvg("marker", {
-    id: "dependency-arrow",
-    viewBox: "0 -5 10 10",
-    refX: "10",
-    refY: "0",
-    markerWidth: "7",
-    markerHeight: "7",
-    orient: "auto",
-  });
-  dependencyMarker.append(
-    makeSvg("path", {
-      d: "M0,-5L10,0L0,5",
-      fill: "currentColor",
-    }),
+  const makeArrowMarker = (id, className) => {
+    const marker = makeSvg("marker", {
+      id,
+      viewBox: "0 -5 10 10",
+      refX: "10",
+      refY: "0",
+      markerWidth: "10",
+      markerHeight: "10",
+      markerUnits: "userSpaceOnUse",
+      orient: "auto",
+    });
+    marker.append(
+      makeSvg("path", {
+        class: className,
+        d: "M0,-5L10,0L0,5Z",
+      }),
+    );
+    return marker;
+  };
+  defs.append(
+    makeArrowMarker("dependency-arrow", "arrowhead"),
+    makeArrowMarker("dependency-arrow-incoming", "arrowhead incoming"),
+    makeArrowMarker("dependency-arrow-outgoing", "arrowhead outgoing"),
   );
-  defs.append(dependencyMarker);
   svg.append(defs);
 
   const laneLayer = makeSvg("g");
+  const edgeHaloLayer = makeSvg("g");
   const edgeLayer = makeSvg("g");
   const nodeLayer = makeSvg("g");
-  svg.append(laneLayer, edgeLayer, nodeLayer);
+  svg.append(laneLayer, edgeHaloLayer, edgeLayer, nodeLayer);
 
   const byId = new Map(nodes.map((node) => [node.id, node]));
 
@@ -410,17 +419,39 @@ function renderGraph() {
   ]);
 
   for (const edge of renderedEdges) {
+    const pathData = edgePath(byId.get(edge.source), byId.get(edge.target));
+    const incoming = edge.target === state.selectedId;
+    const outgoing = edge.source === state.selectedId;
+    const related = incoming || outgoing;
+
+    if (edge.type === "blocks") {
+      const halo = makeSvg("path", {
+        class: "edge-halo",
+        d: pathData,
+      });
+      if (state.selectedId) {
+        halo.classList.toggle("is-related", related);
+        halo.classList.toggle("is-dimmed", !related);
+      }
+      edgeHaloLayer.append(halo);
+    }
+
     const path = makeSvg("path", {
       class: `edge ${edge.type}`,
-      d: edgePath(byId.get(edge.source), byId.get(edge.target)),
+      d: pathData,
     });
     if (edge.type === "blocks") {
-      path.setAttribute("marker-end", "url(#dependency-arrow)");
+      const markerId = incoming
+        ? "dependency-arrow-incoming"
+        : outgoing
+          ? "dependency-arrow-outgoing"
+          : "dependency-arrow";
+      path.setAttribute("marker-end", `url(#${markerId})`);
     }
     if (state.selectedId) {
-      const related =
-        edge.source === state.selectedId || edge.target === state.selectedId;
       path.classList.toggle("is-related", related);
+      path.classList.toggle("is-incoming", incoming);
+      path.classList.toggle("is-outgoing", outgoing);
       path.classList.toggle("is-dimmed", !related);
     }
     edgeLayer.append(path);
