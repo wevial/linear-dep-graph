@@ -79,6 +79,7 @@ async function serveStatic(pathname, response) {
       ? "index.html"
       : new Map([
           ["/app.js", "app.js"],
+          ["/graph-geometry.js", "graph-geometry.js"],
           ["/styles.css", "styles.css"],
           ["/mark.svg", "mark.svg"],
         ]).get(pathname);

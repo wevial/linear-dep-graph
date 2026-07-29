@@ -49,17 +49,19 @@
 
 html {
   min-width: 320px;
-  background: var(--paper);
-}
-
-body {
-  margin: 0;
-  color: var(--ink);
+  min-height: 100%;
   background:
     linear-gradient(var(--grid) 1px, transparent 1px),
     linear-gradient(90deg, var(--grid) 1px, transparent 1px),
     var(--paper);
   background-size: 24px 24px;
+}
+
+body {
+  min-height: 100vh;
+  margin: 0;
+  color: var(--ink);
+  background: transparent;
   font-family: "Avenir Next", "Segoe UI", sans-serif;
   font-size: 15px;
   line-height: 1.4;
@@ -89,7 +91,7 @@ a:focus-visible,
 .app-shell {
   width: min(1680px, 100%);
   margin: 0 auto;
-  padding: 26px clamp(16px, 3vw, 48px) 34px;
+  padding: 18px clamp(16px, 3vw, 48px) 34px;
 }
 
 .masthead {
@@ -97,72 +99,13 @@ a:focus-visible,
   align-items: flex-end;
   justify-content: space-between;
   gap: 32px;
-  padding: 8px 0 26px;
+  padding: 5px 0 18px;
   border-bottom: 3px solid var(--line-strong);
   animation: arrive 380ms ease-out both;
 }
 
 .brand {
-  display: flex;
-  align-items: center;
-  gap: 18px;
-}
-
-.brand-mark {
-  position: relative;
-  width: 54px;
-  height: 54px;
-  border: 2px solid var(--line-strong);
-  background: var(--acid);
-  box-shadow: 5px 5px 0 var(--shadow);
-}
-
-.brand-mark::before,
-.brand-mark::after {
-  content: "";
-  position: absolute;
-  height: 2px;
-  background: #1c211c;
-  transform-origin: left center;
-}
-
-.brand-mark::before {
-  width: 25px;
-  left: 15px;
-  top: 16px;
-  transform: rotate(40deg);
-}
-
-.brand-mark::after {
-  width: 24px;
-  left: 16px;
-  top: 36px;
-  transform: rotate(-42deg);
-}
-
-.brand-mark span {
-  position: absolute;
-  z-index: 1;
-  width: 9px;
-  height: 9px;
-  border: 2px solid #1c211c;
-  border-radius: 50%;
-  background: var(--paper-raised);
-}
-
-.brand-mark span:nth-child(1) {
-  left: 9px;
-  top: 9px;
-}
-
-.brand-mark span:nth-child(2) {
-  right: 7px;
-  top: 27px;
-}
-
-.brand-mark span:nth-child(3) {
-  left: 8px;
-  bottom: 5px;
+  min-width: 0;
 }
 
 .eyebrow {
@@ -184,10 +127,10 @@ p {
 h1 {
   margin-bottom: 0;
   font-family: "Iowan Old Style", "Baskerville", Georgia, serif;
-  font-size: clamp(32px, 5vw, 61px);
+  font-size: clamp(26px, 2.8vw, 40px);
   font-weight: 500;
-  letter-spacing: -0.045em;
-  line-height: 0.94;
+  letter-spacing: -0.025em;
+  line-height: 1;
 }
 
 .masthead-note {
@@ -249,6 +192,12 @@ select:disabled {
   gap: 8px;
   height: 42px;
   white-space: nowrap;
+}
+
+.view-toggles {
+  display: flex;
+  align-items: flex-end;
+  gap: 14px;
 }
 
 .check-field input {
@@ -333,13 +282,15 @@ select:disabled {
   grid-template-columns: minmax(260px, 1.4fr) minmax(150px, 0.7fr) minmax(150px, 0.7fr) auto;
   gap: 20px;
   align-items: center;
-  width: min(1320px, calc(100% - 32px));
+  width: 100vw;
   max-height: min(52vh, 420px);
   margin: 0;
   padding: 29px 22px max(22px, env(safe-area-inset-bottom));
   overflow-y: auto;
   border: 2px solid var(--line-strong);
+  border-right: 0;
   border-bottom: 0;
+  border-left: 0;
   background: var(--paper-raised);
   box-shadow:
     0 -7px 0 var(--coral),
@@ -614,6 +565,7 @@ select:disabled {
   stroke: var(--line);
   stroke-width: 1;
   vector-effect: non-scaling-stroke;
+  transition: fill-opacity 160ms ease;
 }
 
 .issue-node[data-status-type="triage"] rect,
@@ -650,6 +602,18 @@ select:disabled {
 
 .issue-node.is-dimmed {
   opacity: 0.16;
+}
+
+#dependency-graph.is-xray .issue-node rect {
+  fill-opacity: 0.68;
+}
+
+#dependency-graph.is-xray .edge-halo {
+  opacity: 0.62;
+}
+
+#dependency-graph.is-xray .edge-halo.is-related {
+  opacity: 0.8;
 }
 
 .node-id {
@@ -725,7 +689,6 @@ footer a {
 
   .issue-detail {
     grid-template-columns: 1fr 1fr;
-    width: min(760px, calc(100% - 24px));
     max-height: 62vh;
   }
 
@@ -754,15 +717,6 @@ footer a {
     display: none;
   }
 
-  .brand {
-    align-items: flex-start;
-  }
-
-  .brand-mark {
-    width: 45px;
-    height: 45px;
-  }
-
   .control-deck {
     grid-template-columns: 1fr;
     box-shadow: 4px 4px 0 var(--shadow);
@@ -770,7 +724,6 @@ footer a {
 
   .issue-detail {
     grid-template-columns: 1fr;
-    width: calc(100% - 16px);
     max-height: 72vh;
     padding-right: 16px;
     padding-left: 16px;

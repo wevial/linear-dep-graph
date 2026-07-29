@@ -16,9 +16,6 @@
     <main class="app-shell">
       <header class="masthead">
         <div class="brand">
-          <div class="brand-mark" aria-hidden="true">
-            <span></span><span></span><span></span>
-          </div>
           <div>
             <p class="eyebrow">Local project cartography</p>
             <h1>Linear Dependency Graph</h1>
@@ -48,10 +45,17 @@
           >
         </label>
 
-        <label class="check-field">
-          <input id="parent-toggle" type="checkbox" checked>
-          <span>Show parent links</span>
-        </label>
+        <div class="view-toggles">
+          <label class="check-field">
+            <input id="parent-toggle" type="checkbox" checked>
+            <span>Parent links</span>
+          </label>
+
+          <label class="check-field">
+            <input id="edge-xray-toggle" type="checkbox">
+            <span>X-ray cards</span>
+          </label>
+        </div>
 
         <button id="refresh-button" class="button button-primary" type="button">
           Refresh from Linear

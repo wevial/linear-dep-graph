@@ -1,7 +1,10 @@
+import { edgePath } from "./graph-geometry.js";
+
 const elements = {
   projectSelect: document.querySelector("#project-select"),
   search: document.querySelector("#issue-search"),
   parentToggle: document.querySelector("#parent-toggle"),
+  edgeXrayToggle: document.querySelector("#edge-xray-toggle"),
   refresh: document.querySelector("#refresh-button"),
   message: document.querySelector("#message"),
   detail: document.querySelector("#issue-detail"),
@@ -215,46 +218,6 @@ function wrapTitle(title, maxCharacters = 28) {
     lines[3] = `${lines[3].replace(/[.…]$/, "")}…`;
   }
   return lines;
-}
-
-function boundaryPoint(node, towardX, towardY) {
-  const centerX = node.x + node.width / 2;
-  const centerY = node.y + node.height / 2;
-  const deltaX = towardX - centerX;
-  const deltaY = towardY - centerY;
-  if (deltaX === 0 && deltaY === 0) return { x: centerX, y: centerY };
-
-  const scale =
-    1 /
-    Math.max(
-      Math.abs(deltaX) / (node.width / 2),
-      Math.abs(deltaY) / (node.height / 2),
-    );
-  return {
-    x: centerX + deltaX * scale,
-    y: centerY + deltaY * scale,
-  };
-}
-
-function edgePath(source, target) {
-  const sourceCenter = {
-    x: source.x + source.width / 2,
-    y: source.y + source.height / 2,
-  };
-  const targetCenter = {
-    x: target.x + target.width / 2,
-    y: target.y + target.height / 2,
-  };
-  const start = boundaryPoint(source, targetCenter.x, targetCenter.y);
-  const end = boundaryPoint(target, sourceCenter.x, sourceCenter.y);
-
-  if (source.column === target.column) {
-    const bend = source.x + source.width + 12;
-    return `M${start.x},${start.y} C${bend},${start.y} ${bend},${end.y} ${end.x},${end.y}`;
-  }
-
-  const midpoint = (start.x + end.x) / 2;
-  return `M${start.x},${start.y} C${midpoint},${start.y} ${midpoint},${end.y} ${end.x},${end.y}`;
 }
 
 function relationIds(issueId, direction) {
@@ -592,6 +555,13 @@ elements.search.addEventListener("input", () => {
 elements.parentToggle.addEventListener("change", () => {
   state.showParents = elements.parentToggle.checked;
   renderGraph();
+});
+
+elements.edgeXrayToggle.addEventListener("change", () => {
+  elements.graph.classList.toggle(
+    "is-xray",
+    elements.edgeXrayToggle.checked,
+  );
 });
 
 elements.refresh.addEventListener("click", () =>
