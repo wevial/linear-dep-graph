@@ -393,24 +393,103 @@ select:disabled {
 
 .graph-bar {
   display: flex;
-  align-items: flex-end;
-  justify-content: flex-end;
-  gap: 24px;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 18px;
   min-height: 18px;
-  margin: 0 0 7px;
+  margin: 0 0 9px;
 }
 
-.graph-meta {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: flex-end;
-  gap: 9px 17px;
+.legend-panel {
+  min-width: 0;
   color: var(--muted);
   font-size: 11px;
 }
 
-.graph-meta span {
+.legend-panel summary {
+  width: max-content;
+  color: var(--ink);
+  cursor: pointer;
+  font-family: "SFMono-Regular", Consolas, monospace;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.legend-panel summary::marker {
+  color: var(--coral);
+}
+
+.legend-content {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 8px 28px;
+  margin-top: 8px;
+}
+
+.legend-group {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 13px;
+}
+
+.legend-group strong {
+  color: var(--ink);
+  font-family: "SFMono-Regular", Consolas, monospace;
+  font-size: 9px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.legend-group span,
+.sync-status {
   white-space: nowrap;
+}
+
+.legend-swatch,
+.legend-border {
+  display: inline-block;
+  width: 15px;
+  height: 11px;
+  margin-right: 5px;
+  border: 1px solid var(--line);
+  background: var(--node-muted);
+  vertical-align: -2px;
+}
+
+.legend-swatch.started {
+  background: var(--blue-soft);
+}
+
+.legend-swatch.completed {
+  background: var(--acid-soft);
+}
+
+.legend-swatch.canceled {
+  background: var(--coral-soft);
+}
+
+.legend-border.selected {
+  border: 3px solid var(--ink);
+}
+
+.legend-border.incoming {
+  border: 3px solid var(--coral);
+}
+
+.legend-border.outgoing {
+  border: 3px solid var(--blue);
+}
+
+.legend-border.parent {
+  border: 3px dashed var(--coral);
+}
+
+.legend-border.child {
+  border: 3px dashed var(--blue);
 }
 
 .legend-line {
@@ -425,6 +504,12 @@ select:disabled {
   border-top-width: 1px;
   border-top-color: var(--line);
   border-top-style: dashed;
+}
+
+.sync-status {
+  color: var(--muted);
+  font-size: 11px;
+  text-align: right;
 }
 
 .graph-viewport {
@@ -734,8 +819,14 @@ footer a {
     flex-direction: column;
   }
 
-  .graph-meta {
-    justify-content: flex-start;
+  .legend-content,
+  .legend-group {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .sync-status {
+    text-align: left;
   }
 
   .graph-viewport {

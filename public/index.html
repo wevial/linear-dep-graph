@@ -104,11 +104,34 @@
 
       <section class="graph-section" aria-label="Project issue dependency graph">
         <div class="graph-bar">
-          <div class="graph-meta">
-            <span><i class="legend-line dependency"></i> blocker → blocked</span>
-            <span><i class="legend-line parent"></i> parent → child</span>
-            <span id="sync-status">Waiting for project data</span>
-          </div>
+          <details class="legend-panel" open>
+            <summary>How to read the graph</summary>
+            <div class="legend-content">
+              <div class="legend-group">
+                <strong>Card fill = workflow state</strong>
+                <span><i class="legend-swatch unstarted"></i>Unstarted</span>
+                <span><i class="legend-swatch started"></i>In progress</span>
+                <span><i class="legend-swatch completed"></i>Completed</span>
+                <span><i class="legend-swatch canceled"></i>Canceled</span>
+              </div>
+
+              <div class="legend-group">
+                <strong>After you select a card</strong>
+                <span><i class="legend-border selected"></i>Selected issue</span>
+                <span><i class="legend-border incoming"></i>Blocks selected</span>
+                <span><i class="legend-border outgoing"></i>Blocked by selected</span>
+                <span><i class="legend-border parent"></i>Parent of selected</span>
+                <span><i class="legend-border child"></i>Child of selected</span>
+              </div>
+
+              <div class="legend-group">
+                <strong>Arrow style</strong>
+                <span><i class="legend-line dependency"></i>blocker → blocked</span>
+                <span><i class="legend-line parent"></i>parent → child</span>
+              </div>
+            </div>
+          </details>
+          <span id="sync-status" class="sync-status">Waiting for project data</span>
         </div>
 
         <div id="graph-viewport" class="graph-viewport">
