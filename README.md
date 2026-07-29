@@ -25,7 +25,7 @@ stays in the local server process and is never exposed to the browser.
 ## Quick start
 
 ```bash
-git clone <your-fork-or-repository-url>
+gh repo clone wevial/linear-dep-graph
 cd linear-dep-graph
 cp .env.example .env
 chmod 600 .env
