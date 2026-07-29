@@ -1,4 +1,5 @@
 import { edgePath } from "./graph-geometry.js";
+import { relatedIssueIds } from "./graph-data.js";
 
 const elements = {
   projectSelect: document.querySelector("#project-select"),
@@ -220,20 +221,6 @@ function wrapTitle(title, maxCharacters = 28) {
   return lines;
 }
 
-function relationIds(issueId, direction) {
-  if (!state.graph) return [];
-  return state.graph.edges
-    .filter(
-      (edge) =>
-        edge.type === "blocks" &&
-        (direction === "in" ? edge.target === issueId : edge.source === issueId),
-    )
-    .map((edge) => (direction === "in" ? edge.source : edge.target))
-    .sort((left, right) =>
-      left.localeCompare(right, undefined, { numeric: true }),
-    );
-}
-
 function renderGraph() {
   const svg = elements.graph;
   const nodes = visibleNodes();
@@ -369,16 +356,15 @@ function renderGraph() {
       (edge.type !== "parent" || state.showParents),
   );
 
-  const blockedBy = state.selectedId
-    ? relationIds(state.selectedId, "in")
-    : [];
-  const blocks = state.selectedId
-    ? relationIds(state.selectedId, "out")
-    : [];
+  const { blockedBy, blocks, parents, children } = state.selectedId
+    ? relatedIssueIds(state.graph.edges, state.selectedId)
+    : { blockedBy: [], blocks: [], parents: [], children: [] };
   const neighborhood = new Set([
     state.selectedId,
     ...blockedBy,
     ...blocks,
+    ...parents,
+    ...children,
   ]);
 
   for (const edge of renderedEdges) {
@@ -432,6 +418,8 @@ function renderGraph() {
     group.classList.toggle("is-selected", node.id === state.selectedId);
     group.classList.toggle("is-blocker", blockedBy.includes(node.id));
     group.classList.toggle("is-blocked", blocks.includes(node.id));
+    group.classList.toggle("is-parent", parents.includes(node.id));
+    group.classList.toggle("is-child", children.includes(node.id));
     group.classList.toggle(
       "is-dimmed",
       Boolean(state.selectedId) && !neighborhood.has(node.id),
@@ -518,11 +506,12 @@ function renderDetail() {
   elements.detailPriority.textContent = selected.priority;
   elements.detailTitle.textContent = selected.title;
   elements.detailLink.href = selected.url;
-  renderRelationList(
-    elements.detailBlockedBy,
-    relationIds(selected.id, "in"),
+  const { blockedBy, blocks } = relatedIssueIds(
+    state.graph.edges,
+    selected.id,
   );
-  renderRelationList(elements.detailBlocks, relationIds(selected.id, "out"));
+  renderRelationList(elements.detailBlockedBy, blockedBy);
+  renderRelationList(elements.detailBlocks, blocks);
   elements.detail.inert = false;
   elements.detail.setAttribute("aria-hidden", "false");
   elements.detail.classList.add("is-open");

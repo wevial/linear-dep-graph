@@ -99,23 +99,13 @@ a:focus-visible,
   align-items: flex-end;
   justify-content: space-between;
   gap: 32px;
-  padding: 5px 0 18px;
-  border-bottom: 3px solid var(--line-strong);
+  padding: 3px 0 10px;
+  border-bottom: 2px solid var(--line-strong);
   animation: arrive 380ms ease-out both;
 }
 
 .brand {
   min-width: 0;
-}
-
-.eyebrow {
-  margin: 0 0 4px;
-  color: var(--muted);
-  font-family: "SFMono-Regular", Consolas, monospace;
-  font-size: 11px;
-  font-weight: 600;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
 }
 
 h1,
@@ -127,7 +117,7 @@ p {
 h1 {
   margin-bottom: 0;
   font-family: "Iowan Old Style", "Baskerville", Georgia, serif;
-  font-size: clamp(26px, 2.8vw, 40px);
+  font-size: clamp(18px, 1.7vw, 24px);
   font-weight: 500;
   letter-spacing: -0.025em;
   line-height: 1;
@@ -136,7 +126,7 @@ h1 {
 .masthead-note {
   margin-bottom: 2px;
   color: var(--muted);
-  font-size: 13px;
+  font-size: 11px;
   text-align: right;
 }
 
@@ -145,7 +135,7 @@ h1 {
   grid-template-columns: minmax(230px, 1.2fr) minmax(200px, 1fr) auto auto;
   align-items: end;
   gap: 14px;
-  margin: 22px 0;
+  margin: 14px 0 18px;
   padding: 15px;
   border: 2px solid var(--line-strong);
   border-left: 9px solid var(--acid);
@@ -404,17 +394,10 @@ select:disabled {
 .graph-bar {
   display: flex;
   align-items: flex-end;
-  justify-content: space-between;
+  justify-content: flex-end;
   gap: 24px;
-  margin: 0 0 10px;
-}
-
-.graph-bar h2 {
-  margin: 0;
-  font-family: "Iowan Old Style", "Baskerville", Georgia, serif;
-  font-size: clamp(23px, 3vw, 36px);
-  font-weight: 500;
-  line-height: 1;
+  min-height: 18px;
+  margin: 0 0 7px;
 }
 
 .graph-meta {
@@ -598,6 +581,18 @@ select:disabled {
 .issue-node.is-blocked rect {
   stroke: var(--blue);
   stroke-width: 3;
+}
+
+.issue-node.is-parent rect {
+  stroke: var(--coral);
+  stroke-width: 3;
+  stroke-dasharray: 8 4;
+}
+
+.issue-node.is-child rect {
+  stroke: var(--blue);
+  stroke-width: 3;
+  stroke-dasharray: 8 4;
 }
 
 .issue-node.is-dimmed {
