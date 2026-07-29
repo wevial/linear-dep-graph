@@ -1,0 +1,6 @@
+.env
+.DS_Store
+node_modules/
+coverage/
+*.log
+.linear-dep-graph.pid

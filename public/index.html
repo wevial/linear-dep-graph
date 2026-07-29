@@ -1,0 +1,135 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta
+      name="description"
+      content="Explore blockers, blocked issues, and parent relationships across any Linear project."
+    >
+    <title>Linear Dependency Graph</title>
+    <link rel="icon" href="/mark.svg" type="image/svg+xml">
+    <link rel="stylesheet" href="/styles.css">
+    <script src="/app.js" type="module"></script>
+  </head>
+  <body>
+    <main class="app-shell">
+      <header class="masthead">
+        <div class="brand">
+          <div class="brand-mark" aria-hidden="true">
+            <span></span><span></span><span></span>
+          </div>
+          <div>
+            <p class="eyebrow">Local project cartography</p>
+            <h1>Linear Dependency Graph</h1>
+          </div>
+        </div>
+        <p class="masthead-note">
+          See the work, the sequence,<br>
+          and what is holding it up.
+        </p>
+      </header>
+
+      <section class="control-deck" aria-label="Graph controls">
+        <label class="field project-field">
+          <span>Project</span>
+          <select id="project-select" disabled>
+            <option>Loading projects…</option>
+          </select>
+        </label>
+
+        <label class="field search-field">
+          <span>Find an issue</span>
+          <input
+            id="issue-search"
+            type="search"
+            placeholder="Identifier, title, or status"
+            autocomplete="off"
+          >
+        </label>
+
+        <label class="check-field">
+          <input id="parent-toggle" type="checkbox" checked>
+          <span>Show parent links</span>
+        </label>
+
+        <button id="refresh-button" class="button button-primary" type="button">
+          Refresh from Linear
+        </button>
+      </section>
+
+      <div id="message" class="message" hidden role="status" aria-live="polite"></div>
+
+      <section id="issue-detail" class="issue-detail" aria-live="polite" hidden>
+        <div class="issue-identity">
+          <div class="issue-meta">
+            <strong id="detail-id"></strong>
+            <span id="detail-status" class="status-chip"></span>
+            <span id="detail-priority"></span>
+          </div>
+          <h2 id="detail-title"></h2>
+        </div>
+
+        <div class="relation-column">
+          <span class="relation-label">Blocked by</span>
+          <div id="detail-blocked-by" class="relation-list"></div>
+        </div>
+
+        <div class="relation-column">
+          <span class="relation-label">Blocks</span>
+          <div id="detail-blocks" class="relation-list"></div>
+        </div>
+
+        <div class="detail-actions">
+          <a
+            id="detail-link"
+            class="button"
+            href="#"
+            target="_blank"
+            rel="noreferrer"
+          >Open in Linear ↗</a>
+          <button id="clear-selection" class="text-button" type="button">
+            Clear trace
+          </button>
+        </div>
+      </section>
+
+      <section class="graph-section" aria-labelledby="graph-heading">
+        <div class="graph-bar">
+          <div>
+            <p class="eyebrow">Workflow map</p>
+            <h2 id="graph-heading">Project issues by status</h2>
+          </div>
+          <div class="graph-meta">
+            <span><i class="legend-line dependency"></i> blocker → blocked</span>
+            <span><i class="legend-line parent"></i> parent → child</span>
+            <span id="sync-status">Waiting for project data</span>
+          </div>
+        </div>
+
+        <div id="graph-viewport" class="graph-viewport">
+          <svg
+            id="dependency-graph"
+            role="img"
+            aria-labelledby="graph-title graph-description"
+          >
+            <title id="graph-title">Linear project dependency graph</title>
+            <desc id="graph-description">
+              Issues arranged in workflow status columns. Arrows point from
+              blockers to the issues they block.
+            </desc>
+          </svg>
+        </div>
+      </section>
+
+      <footer>
+        <span>API credentials stay on this machine.</span>
+        <a href="https://linear.app/developers/graphql" target="_blank" rel="noreferrer">
+          Linear GraphQL API ↗
+        </a>
+      </footer>
+    </main>
+
+    <noscript>This application requires JavaScript to render the dependency graph.</noscript>
+  </body>
+</html>

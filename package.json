@@ -1,0 +1,25 @@
+{
+  "name": "linear-dep-graph",
+  "version": "0.1.0",
+  "description": "A local, interactive dependency graph for any Linear project.",
+  "type": "module",
+  "license": "MIT",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "start": "node src/server.mjs",
+    "background": "node scripts/background.mjs",
+    "stop": "node scripts/background.mjs --stop",
+    "dev": "node --watch src/server.mjs",
+    "test": "node --test",
+    "check": "node --check src/config.mjs && node --check src/linear.mjs && node --check src/server.mjs && node --check scripts/background.mjs && node --check public/app.js && node --test"
+  },
+  "keywords": [
+    "linear",
+    "dependency-graph",
+    "issues",
+    "project-management",
+    "visualization"
+  ]
+}
