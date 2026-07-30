@@ -1,5 +1,5 @@
 import { edgePath } from "./graph-geometry.js";
-import { relatedIssueIds } from "./graph-data.js";
+import { relatedIssueIds, workflowColumns } from "./graph-data.js";
 
 const elements = {
   projectSelect: document.querySelector("#project-select"),
@@ -31,15 +31,6 @@ const state = {
   showParents: true,
   loading: false,
 };
-
-const statusOrder = new Map([
-  ["triage", 0],
-  ["backlog", 1],
-  ["unstarted", 2],
-  ["started", 3],
-  ["completed", 4],
-  ["canceled", 5],
-]);
 
 const svgNamespace = "http://www.w3.org/2000/svg";
 
@@ -175,29 +166,6 @@ function visibleNodes() {
   );
 }
 
-function columnsFor(nodes) {
-  const columns = new Map();
-  for (const node of nodes) {
-    const key = `${node.statusType}\u0000${node.status}`;
-    if (!columns.has(key)) {
-      columns.set(key, {
-        key,
-        name: node.status,
-        type: node.statusType,
-        nodes: [],
-      });
-    }
-    columns.get(key).nodes.push(node);
-  }
-
-  return [...columns.values()].sort(
-    (left, right) =>
-      (statusOrder.get(left.type) ?? 99) -
-        (statusOrder.get(right.type) ?? 99) ||
-      left.name.localeCompare(right.name),
-  );
-}
-
 function wrapTitle(title, maxCharacters = 28) {
   const words = title.split(/\s+/);
   const lines = [];
@@ -224,7 +192,7 @@ function wrapTitle(title, maxCharacters = 28) {
 function renderGraph() {
   const svg = elements.graph;
   const nodes = visibleNodes();
-  const columns = columnsFor(nodes);
+  const columns = workflowColumns(nodes, state.graph?.workflowStates);
   svg.replaceChildren();
 
   const title = makeSvg("title", { id: "graph-title" });
@@ -252,8 +220,13 @@ function renderGraph() {
   }
 
   const viewportWidth = Math.max(320, elements.graphViewport.clientWidth - 4);
+  const columnGap = 20;
   const columnWidth = Math.max(218, viewportWidth / columns.length);
-  const width = Math.max(viewportWidth, columns.length * columnWidth);
+  const columnStride = columnWidth + columnGap;
+  const width = Math.max(
+    viewportWidth,
+    columns.length * columnWidth + (columns.length - 1) * columnGap,
+  );
   const nodeWidth = columnWidth - 20;
   const nodeHeight = 96;
   const rowGap = 24;
@@ -307,7 +280,7 @@ function renderGraph() {
   const byId = new Map(nodes.map((node) => [node.id, node]));
 
   columns.forEach((column, columnIndex) => {
-    const x = columnIndex * columnWidth;
+    const x = columnIndex * columnStride;
     laneLayer.append(
       makeSvg("rect", {
         class: "lane",
@@ -401,6 +374,14 @@ function renderGraph() {
       path.classList.toggle("is-related", related);
       path.classList.toggle("is-incoming", incoming);
       path.classList.toggle("is-outgoing", outgoing);
+      path.classList.toggle(
+        "is-parent-edge",
+        edge.type === "parent" && incoming,
+      );
+      path.classList.toggle(
+        "is-child-edge",
+        edge.type === "parent" && outgoing,
+      );
       path.classList.toggle("is-dimmed", !related);
     }
     edgeLayer.append(path);

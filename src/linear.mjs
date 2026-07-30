@@ -22,6 +22,24 @@ const PROJECTS_QUERY = `
   }
 `;
 
+const PROJECT_WORKFLOW_QUERY = `
+  query DependencyGraphProjectWorkflow($projectId: String!) {
+    project(id: $projectId) {
+      teams(first: 20) {
+        nodes {
+          states(first: 100) {
+            nodes {
+              name
+              type
+              position
+            }
+          }
+        }
+      }
+    }
+  }
+`;
+
 const ISSUES_QUERY = `
   query DependencyGraphIssues($projectId: ID!, $after: String) {
     issues(
@@ -39,6 +57,7 @@ const ISSUES_QUERY = `
         state {
           name
           type
+          position
         }
         parent {
           identifier
@@ -66,6 +85,15 @@ const priorityLabels = new Map([
   [2, "High"],
   [3, "Medium"],
   [4, "Low"],
+]);
+
+const statusTypeOrder = new Map([
+  ["triage", 0],
+  ["backlog", 1],
+  ["unstarted", 2],
+  ["started", 3],
+  ["completed", 4],
+  ["canceled", 5],
 ]);
 
 export class LinearApiError extends Error {
@@ -146,6 +174,7 @@ export function normalizeIssues(issues) {
       title: issue.title,
       status: issue.state?.name ?? "Unknown",
       statusType: issue.state?.type ?? "unknown",
+      statusPosition: issue.state?.position ?? Number.MAX_SAFE_INTEGER,
       priority: priorityLabels.get(issue.priority) ?? "No priority",
       url: issue.url,
       updatedAt: issue.updatedAt,
@@ -155,6 +184,34 @@ export function normalizeIssues(issues) {
     );
 
   return { nodes, edges };
+}
+
+export function normalizeWorkflowStates(teams) {
+  const states = new Map();
+
+  for (const team of teams) {
+    for (const state of team.states?.nodes ?? []) {
+      const type = state.type ?? "unknown";
+      const name = state.name ?? "Unknown";
+      const key = `${type}\u0000${name}`;
+      const position = Number.isFinite(state.position)
+        ? state.position
+        : Number.MAX_SAFE_INTEGER;
+      const existing = states.get(key);
+
+      if (!existing || position < existing.position) {
+        states.set(key, { name, type, position });
+      }
+    }
+  }
+
+  return [...states.values()].sort(
+    (left, right) =>
+      (statusTypeOrder.get(left.type) ?? 99) -
+        (statusTypeOrder.get(right.type) ?? 99) ||
+      left.position - right.position ||
+      left.name.localeCompare(right.name),
+  );
 }
 
 export function createLinearClient({
@@ -204,6 +261,10 @@ export function createLinearClient({
         });
       }
 
+      const workflowData = await query(PROJECT_WORKFLOW_QUERY, { projectId });
+      const workflowStates = normalizeWorkflowStates(
+        workflowData.project?.teams.nodes ?? [],
+      );
       const issues = [];
       let after = null;
 
@@ -217,6 +278,7 @@ export function createLinearClient({
 
       return {
         ...normalizeIssues(issues),
+        workflowStates,
         fetchedAt: new Date().toISOString(),
       };
     },

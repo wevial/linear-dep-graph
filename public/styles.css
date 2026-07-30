@@ -12,6 +12,8 @@
   --coral-soft: #f3b2a2;
   --blue: #4e86a4;
   --blue-soft: #bcd4df;
+  --amber: #a96f16;
+  --violet: #7455a6;
   --shadow: #1c211c;
   --lane: rgb(28 33 28 / 5%);
   --node: #f8f4e9;
@@ -34,6 +36,8 @@
     --coral-soft: #583127;
     --blue: #7eb6d0;
     --blue-soft: #263e49;
+    --amber: #efb64d;
+    --violet: #bd9be8;
     --shadow: #050604;
     --lane: rgb(241 236 223 / 5%);
     --node: #242920;
@@ -485,11 +489,11 @@ select:disabled {
 }
 
 .legend-border.parent {
-  border: 3px dashed var(--coral);
+  border: 3px dashed var(--amber);
 }
 
 .legend-border.child {
-  border: 3px dashed var(--blue);
+  border: 3px dashed var(--violet);
 }
 
 .legend-line {
@@ -588,6 +592,14 @@ select:disabled {
   stroke: var(--blue);
 }
 
+.edge.is-parent-edge {
+  stroke: var(--amber);
+}
+
+.edge.is-child-edge {
+  stroke: var(--violet);
+}
+
 .edge.is-dimmed {
   opacity: 0.035;
 }
@@ -669,13 +681,13 @@ select:disabled {
 }
 
 .issue-node.is-parent rect {
-  stroke: var(--coral);
+  stroke: var(--amber);
   stroke-width: 3;
   stroke-dasharray: 8 4;
 }
 
 .issue-node.is-child rect {
-  stroke: var(--blue);
+  stroke: var(--violet);
   stroke-width: 3;
   stroke-dasharray: 8 4;
 }

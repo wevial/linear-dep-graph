@@ -4,6 +4,55 @@ function sortIdentifiers(values) {
   );
 }
 
+const statusTypeOrder = new Map([
+  ["triage", 0],
+  ["backlog", 1],
+  ["unstarted", 2],
+  ["started", 3],
+  ["completed", 4],
+  ["canceled", 5],
+]);
+
+export function workflowColumns(nodes, workflowStates = []) {
+  const columns = new Map();
+
+  const addColumn = ({ name, type, position }) => {
+    const key = `${type}\u0000${name}`;
+    if (!columns.has(key)) {
+      columns.set(key, {
+        key,
+        name,
+        type,
+        position: Number.isFinite(position)
+          ? position
+          : Number.MAX_SAFE_INTEGER,
+        nodes: [],
+      });
+    }
+    return columns.get(key);
+  };
+
+  for (const workflowState of workflowStates) {
+    addColumn(workflowState);
+  }
+
+  for (const node of nodes) {
+    addColumn({
+      name: node.status,
+      type: node.statusType,
+      position: node.statusPosition,
+    }).nodes.push(node);
+  }
+
+  return [...columns.values()].sort(
+    (left, right) =>
+      (statusTypeOrder.get(left.type) ?? 99) -
+        (statusTypeOrder.get(right.type) ?? 99) ||
+      left.position - right.position ||
+      left.name.localeCompare(right.name),
+  );
+}
+
 export function relatedIssueIds(edges, issueId) {
   const blockedBy = [];
   const blocks = [];

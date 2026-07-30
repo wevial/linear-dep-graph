@@ -1,6 +1,37 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { normalizeIssues, requestLinear } from "../src/linear.mjs";
+import {
+  normalizeIssues,
+  normalizeWorkflowStates,
+  requestLinear,
+} from "../src/linear.mjs";
+
+test("normalizeWorkflowStates merges team workflows and preserves position", () => {
+  const states = normalizeWorkflowStates([
+    {
+      states: {
+        nodes: [
+          { name: "In Review", type: "started", position: 2 },
+          { name: "Done", type: "completed", position: 4 },
+        ],
+      },
+    },
+    {
+      states: {
+        nodes: [
+          { name: "In Progress", type: "started", position: 1 },
+          { name: "In Review", type: "started", position: 3 },
+        ],
+      },
+    },
+  ]);
+
+  assert.deepEqual(states, [
+    { name: "In Progress", type: "started", position: 1 },
+    { name: "In Review", type: "started", position: 2 },
+    { name: "Done", type: "completed", position: 4 },
+  ]);
+});
 
 test("normalizeIssues creates dependency and parent edges without duplicates", () => {
   const issues = [
