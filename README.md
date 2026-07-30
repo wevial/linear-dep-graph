@@ -29,7 +29,7 @@ browser and does not require a Linear account or API key.
 
 ## Requirements
 
-- Node.js 20 or newer.
+- Node.js 22.12 or newer.
 - A Linear personal API key with access to the projects or teams you want to inspect.
 
 ## Quick start
