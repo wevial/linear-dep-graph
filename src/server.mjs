@@ -13,6 +13,7 @@ const client = createLinearClient({
   apiUrl: config.apiUrl,
 });
 const projectCache = { value: null, expiresAt: 0 };
+const teamCache = { value: null, expiresAt: 0 };
 const graphCache = new Map();
 
 const mimeTypes = new Map([
@@ -61,12 +62,36 @@ async function cachedProjects(force = false) {
   return projectCache.value;
 }
 
-async function cachedGraph(projectId, force = false) {
-  const cached = graphCache.get(projectId);
+async function cachedTeams(force = false) {
+  if (!force && teamCache.value && teamCache.expiresAt > Date.now()) {
+    return teamCache.value;
+  }
+  teamCache.value = await client.listTeams();
+  teamCache.expiresAt = Date.now() + config.refreshIntervalMs;
+  return teamCache.value;
+}
+
+async function cachedGraph(scopeType, scopeId, force = false) {
+  if (!["project", "team"].includes(scopeType)) {
+    throw new LinearApiError("scopeType must be project or team", {
+      status: 400,
+    });
+  }
+  if (!scopeId) {
+    throw new LinearApiError("A scopeId query parameter is required", {
+      status: 400,
+    });
+  }
+
+  const cacheKey = `${scopeType}:${scopeId}`;
+  const cached = graphCache.get(cacheKey);
   if (!force && cached && cached.expiresAt > Date.now()) return cached.value;
 
-  const value = await client.getProjectGraph(projectId);
-  graphCache.set(projectId, {
+  const value =
+    scopeType === "team"
+      ? await client.getTeamGraph(scopeId)
+      : await client.getProjectGraph(scopeId);
+  graphCache.set(cacheKey, {
     value,
     expiresAt: Date.now() + config.refreshIntervalMs,
   });
@@ -137,10 +162,22 @@ const server = http.createServer(async (request, response) => {
       return;
     }
 
+    if (url.pathname === "/api/teams") {
+      const teams = await cachedTeams(
+        url.searchParams.get("refresh") === "1",
+      );
+      sendJson(response, 200, { teams });
+      return;
+    }
+
     if (url.pathname === "/api/graph") {
       const projectId = url.searchParams.get("projectId");
+      const scopeType =
+        url.searchParams.get("scopeType") ?? (projectId ? "project" : null);
+      const scopeId = url.searchParams.get("scopeId") ?? projectId;
       const graph = await cachedGraph(
-        projectId,
+        scopeType,
+        scopeId,
         url.searchParams.get("refresh") === "1",
       );
       sendJson(response, 200, graph);

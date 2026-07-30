@@ -1,7 +1,7 @@
 {
   "name": "linear-dep-graph",
   "version": "0.1.0",
-  "description": "A local, interactive dependency graph for any Linear project.",
+  "description": "A local, interactive dependency graph for any Linear project or team.",
   "type": "module",
   "license": "MIT",
   "engines": {

@@ -1,6 +1,9 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { edgePath } from "../public/graph-geometry.js";
+import {
+  edgePath,
+  graphLayout,
+} from "../public/graph-geometry.js";
 
 const upper = {
   x: 10,
@@ -33,4 +36,21 @@ test("cross-column edges attach to the facing card sides", () => {
 
   assert.equal(edgePath(upper, right), "M110,45 C155,45 155,125 200,125");
   assert.equal(edgePath(right, upper), "M200,125 C155,125 155,45 110,45");
+});
+
+test("graphLayout leaves padding beyond the final column", () => {
+  const layout = graphLayout({
+    viewportWidth: 1000,
+    columnCount: 3,
+  });
+  const finalColumnX =
+    layout.canvasPadding + 2 * layout.columnStride;
+  const finalNodeRight =
+    finalColumnX + 10 + layout.nodeWidth;
+  const finalLaneRight =
+    finalColumnX + 4 + (layout.columnWidth - 8);
+
+  assert.ok(finalNodeRight <= layout.width - layout.canvasPadding);
+  assert.ok(finalLaneRight <= layout.width - layout.canvasPadding);
+  assert.equal(layout.width, 1000);
 });

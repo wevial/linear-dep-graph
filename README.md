@@ -1,7 +1,7 @@
 # Linear Dependency Graph
 
 A local, interactive map of blockers, blocked issues, parent relationships, and
-workflow status for any Linear project.
+workflow status for any Linear project or team.
 
 The application is intentionally small: one zero-dependency Node server and a
 browser UI built with native HTML, CSS, JavaScript, and SVG. Your Linear API key
@@ -9,18 +9,19 @@ stays in the local server process and is never exposed to the browser.
 
 ## What it does
 
-- Lists every active Linear project visible to your API key.
+- Lists every active Linear project and team visible to your API key.
 - Groups issues by their actual Linear workflow status.
 - Draws blocker → blocked arrows and optional parent → child links.
 - Shows each issue identifier, title, priority, blockers, and downstream work.
-- Supports project switching, issue search, selection tracing, and manual refresh.
-- Refreshes the selected project on a configurable interval with server-side caching.
+- Supports project/team switching, lane filtering, issue search, selection tracing, and manual refresh.
+- Includes an accessible color mode with redundant relationship line patterns.
+- Refreshes the selected scope on a configurable interval with server-side caching.
 - Runs entirely on `127.0.0.1` by default.
 
 ## Requirements
 
 - Node.js 20 or newer.
-- A Linear personal API key with access to the projects you want to inspect.
+- A Linear personal API key with access to the projects or teams you want to inspect.
 
 ## Quick start
 
@@ -72,7 +73,8 @@ is harmless and creates a local lockfile for tooling that expects one.
 | `LINEAR_API_URL` | Linear GraphQL endpoint | Optional endpoint override for development. |
 | `ENV_FILE` | `.env` | Optional path to a different environment file. |
 
-The UI remembers the last selected project in browser local storage.
+The UI remembers the last selected scope, lane choices, and accessibility mode
+in browser local storage.
 
 ## Security model
 
@@ -91,14 +93,15 @@ See [SECURITY.md](SECURITY.md) before changing the bind address or deploying it.
 
 ## How the graph works
 
-The server fetches project-scoped issues in pages of 100 and requests only the
-fields needed by the graph. It deduplicates two relationship types:
+The server fetches project- or team-scoped issues in pages of 100 and requests
+only the fields needed by the graph. It deduplicates two relationship types:
 
 - `blocks`: rendered as a solid arrow from blocker to blocked issue.
 - `parent`: rendered as a dashed line from parent to child.
 
-Relationships whose other endpoint is outside the selected project are omitted
-from the canvas. This keeps every visible node tied to the chosen project.
+Relationships whose other endpoint is outside the selected scope are omitted
+from the canvas. This keeps every visible node tied to the chosen project or
+team.
 
 ## Development
 

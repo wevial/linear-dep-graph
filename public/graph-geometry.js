@@ -1,3 +1,35 @@
+export function graphLayout({
+  viewportWidth,
+  columnCount,
+  minColumnWidth = 218,
+  columnGap = 20,
+  canvasPadding = 12,
+}) {
+  const gapWidth = Math.max(0, columnCount - 1) * columnGap;
+  const availableWidth = Math.max(
+    0,
+    viewportWidth - canvasPadding * 2 - gapWidth,
+  );
+  const columnWidth = Math.max(
+    minColumnWidth,
+    columnCount ? availableWidth / columnCount : minColumnWidth,
+  );
+  const columnStride = columnWidth + columnGap;
+  const width = Math.max(
+    viewportWidth,
+    canvasPadding * 2 + columnCount * columnWidth + gapWidth,
+  );
+
+  return {
+    canvasPadding,
+    columnGap,
+    columnStride,
+    columnWidth,
+    nodeWidth: columnWidth - 20,
+    width,
+  };
+}
+
 export function edgePath(source, target) {
   const sourceCenter = {
     x: source.x + source.width / 2,

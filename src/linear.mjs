@@ -22,6 +22,22 @@ const PROJECTS_QUERY = `
   }
 `;
 
+const TEAMS_QUERY = `
+  query DependencyGraphTeams($after: String) {
+    teams(first: 100, after: $after) {
+      nodes {
+        id
+        key
+        name
+      }
+      pageInfo {
+        hasNextPage
+        endCursor
+      }
+    }
+  }
+`;
+
 const PROJECT_WORKFLOW_QUERY = `
   query DependencyGraphProjectWorkflow($projectId: String!) {
     project(id: $projectId) {
@@ -51,6 +67,7 @@ const ISSUES_QUERY = `
       nodes {
         identifier
         title
+        description
         priority
         url
         updatedAt
@@ -74,6 +91,54 @@ const ISSUES_QUERY = `
       pageInfo {
         hasNextPage
         endCursor
+      }
+    }
+  }
+`;
+
+const TEAM_GRAPH_QUERY = `
+  query DependencyGraphTeam($teamId: String!, $after: String) {
+    team(id: $teamId) {
+      states(first: 100) {
+        nodes {
+          name
+          type
+          position
+        }
+      }
+      issues(
+        first: 100
+        after: $after
+        includeArchived: false
+      ) {
+        nodes {
+          identifier
+          title
+          description
+          priority
+          url
+          updatedAt
+          state {
+            name
+            type
+            position
+          }
+          parent {
+            identifier
+          }
+          relations(first: 20) {
+            nodes {
+              type
+              relatedIssue {
+                identifier
+              }
+            }
+          }
+        }
+        pageInfo {
+          hasNextPage
+          endCursor
+        }
       }
     }
   }
@@ -172,6 +237,7 @@ export function normalizeIssues(issues) {
     .map((issue) => ({
       id: issue.identifier,
       title: issue.title,
+      description: issue.description ?? "",
       status: issue.state?.name ?? "Unknown",
       statusType: issue.state?.type ?? "unknown",
       statusPosition: issue.state?.position ?? Number.MAX_SAFE_INTEGER,
@@ -254,6 +320,25 @@ export function createLinearClient({
       );
     },
 
+    async listTeams() {
+      const teams = [];
+      let after = null;
+
+      do {
+        const data = await query(TEAMS_QUERY, { after });
+        teams.push(...data.teams.nodes);
+        after = data.teams.pageInfo.hasNextPage
+          ? data.teams.pageInfo.endCursor
+          : null;
+      } while (after);
+
+      return teams.sort(
+        (left, right) =>
+          left.name.localeCompare(right.name) ||
+          left.key.localeCompare(right.key),
+      );
+    },
+
     async getProjectGraph(projectId) {
       if (!projectId) {
         throw new LinearApiError("A projectId query parameter is required", {
@@ -273,6 +358,40 @@ export function createLinearClient({
         issues.push(...data.issues.nodes);
         after = data.issues.pageInfo.hasNextPage
           ? data.issues.pageInfo.endCursor
+          : null;
+      } while (after);
+
+      return {
+        ...normalizeIssues(issues),
+        workflowStates,
+        fetchedAt: new Date().toISOString(),
+      };
+    },
+
+    async getTeamGraph(teamId) {
+      if (!teamId) {
+        throw new LinearApiError("A team scope ID is required", {
+          status: 400,
+        });
+      }
+
+      const issues = [];
+      let workflowStates = [];
+      let after = null;
+
+      do {
+        const data = await query(TEAM_GRAPH_QUERY, { teamId, after });
+        if (!data.team) {
+          throw new LinearApiError("The selected Linear team was not found", {
+            status: 404,
+          });
+        }
+        if (!workflowStates.length) {
+          workflowStates = normalizeWorkflowStates([data.team]);
+        }
+        issues.push(...data.team.issues.nodes);
+        after = data.team.issues.pageInfo.hasNextPage
+          ? data.team.issues.pageInfo.endCursor
           : null;
       } while (after);
 

@@ -27,9 +27,9 @@
 
       <section class="control-deck" aria-label="Graph controls">
         <label class="field project-field">
-          <span>Project</span>
+          <span>Scope</span>
           <select id="project-select" disabled>
-            <option>Loading projects…</option>
+            <option>Loading projects and teams…</option>
           </select>
         </label>
 
@@ -70,6 +70,14 @@
           <label class="check-field">
             <input id="edge-xray-toggle" type="checkbox">
             <span>X-ray cards</span>
+          </label>
+
+          <label
+            class="check-field"
+            title="Use a colorblind-safe palette and unique relationship patterns"
+          >
+            <input id="accessible-color-toggle" type="checkbox">
+            <span>Color-safe</span>
           </label>
         </div>
 
@@ -118,9 +126,14 @@
             Close tray
           </button>
         </div>
+
+        <div class="issue-description">
+          <span class="relation-label">Description</span>
+          <div id="detail-description" class="description-body"></div>
+        </div>
       </section>
 
-      <section class="graph-section" aria-label="Project issue dependency graph">
+      <section class="graph-section" aria-label="Issue dependency graph">
         <div class="graph-bar">
           <details class="legend-panel" open>
             <summary>How to read the graph</summary>
@@ -158,7 +171,7 @@
             role="img"
             aria-labelledby="graph-title graph-description"
           >
-            <title id="graph-title">Linear project dependency graph</title>
+            <title id="graph-title">Linear issue dependency graph</title>
             <desc id="graph-description">
               Issues arranged in workflow status columns. Arrows point from
               blockers to the issues they block.

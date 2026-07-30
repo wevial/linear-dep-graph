@@ -1,4 +1,4 @@
-import { edgePath } from "./graph-geometry.js";
+import { edgePath, graphLayout } from "./graph-geometry.js";
 import {
   relatedIssueIds,
   resolveLaneVisibility,
@@ -17,6 +17,7 @@ const elements = {
   lanesAll: document.querySelector("#lanes-all"),
   parentToggle: document.querySelector("#parent-toggle"),
   edgeXrayToggle: document.querySelector("#edge-xray-toggle"),
+  accessibleColorToggle: document.querySelector("#accessible-color-toggle"),
   refresh: document.querySelector("#refresh-button"),
   message: document.querySelector("#message"),
   detail: document.querySelector("#issue-detail"),
@@ -24,6 +25,7 @@ const elements = {
   detailStatus: document.querySelector("#detail-status"),
   detailPriority: document.querySelector("#detail-priority"),
   detailTitle: document.querySelector("#detail-title"),
+  detailDescription: document.querySelector("#detail-description"),
   detailBlockedBy: document.querySelector("#detail-blocked-by"),
   detailBlocks: document.querySelector("#detail-blocks"),
   detailLink: document.querySelector("#detail-link"),
@@ -36,12 +38,14 @@ const elements = {
 const state = {
   config: null,
   projects: [],
+  teams: [],
   graph: null,
   selectedId: null,
   search: "",
   showParents: true,
+  accessibleColors: false,
   laneOverrides: {},
-  laneProjectId: null,
+  laneScopeValue: null,
   loading: false,
 };
 
@@ -86,25 +90,57 @@ function projectLabel(project) {
   return teams ? `${project.name} · ${teams}` : project.name;
 }
 
-function chooseProject() {
-  const remembered = localStorage.getItem("linear-dep-graph.project");
-  const candidateIds = [
-    remembered,
-    state.config.defaultProjectId,
-    state.projects[0]?.id,
+function scopeValue(type, id) {
+  return `${type}:${id}`;
+}
+
+function parseScopeValue(value) {
+  const separator = value.indexOf(":");
+  if (separator === -1) return null;
+  return {
+    type: value.slice(0, separator),
+    id: value.slice(separator + 1),
+  };
+}
+
+function availableScopeValues() {
+  return new Set([
+    ...state.projects.map((project) => scopeValue("project", project.id)),
+    ...state.teams.map((team) => scopeValue("team", team.id)),
+  ]);
+}
+
+function chooseScope() {
+  const legacyProjectId = localStorage.getItem("linear-dep-graph.project");
+  const candidateValues = [
+    localStorage.getItem("linear-dep-graph.scope"),
+    legacyProjectId ? scopeValue("project", legacyProjectId) : null,
+    state.config.defaultProjectId
+      ? scopeValue("project", state.config.defaultProjectId)
+      : null,
+    state.projects[0]
+      ? scopeValue("project", state.projects[0].id)
+      : null,
+    state.teams[0] ? scopeValue("team", state.teams[0].id) : null,
   ].filter(Boolean);
-  return candidateIds.find((id) =>
-    state.projects.some((project) => project.id === id),
-  );
+  const available = availableScopeValues();
+  return candidateValues.find((value) => available.has(value));
 }
 
-function laneStorageKey(projectId) {
-  return `linear-dep-graph.lanes.${projectId}`;
+function laneStorageKey(selectedScope) {
+  return `linear-dep-graph.lanes.${selectedScope}`;
 }
 
-function loadLaneOverrides(projectId) {
+function loadLaneOverrides(selectedScope) {
   try {
-    const value = JSON.parse(localStorage.getItem(laneStorageKey(projectId)));
+    let stored = localStorage.getItem(laneStorageKey(selectedScope));
+    const scope = parseScopeValue(selectedScope);
+    if (stored === null && scope?.type === "project") {
+      stored = localStorage.getItem(
+        `linear-dep-graph.lanes.${scope.id}`,
+      );
+    }
+    const value = JSON.parse(stored);
     return value && typeof value === "object" && !Array.isArray(value)
       ? value
       : {};
@@ -114,11 +150,23 @@ function loadLaneOverrides(projectId) {
 }
 
 function saveLaneOverrides() {
-  if (!state.laneProjectId) return;
+  if (!state.laneScopeValue) return;
   localStorage.setItem(
-    laneStorageKey(state.laneProjectId),
+    laneStorageKey(state.laneScopeValue),
     JSON.stringify(state.laneOverrides),
   );
+}
+
+function setAccessibleColors(enabled, { persist = true } = {}) {
+  state.accessibleColors = enabled;
+  elements.accessibleColorToggle.checked = enabled;
+  document.documentElement.classList.toggle("is-colorblind", enabled);
+  if (persist) {
+    localStorage.setItem(
+      "linear-dep-graph.accessible-colors",
+      enabled ? "1" : "0",
+    );
+  }
 }
 
 function allLaneColumns() {
@@ -197,50 +245,75 @@ function renderLanePicker() {
   );
 }
 
-async function loadProjects() {
-  const { projects } = await getJson("/api/projects");
+async function loadScopes() {
+  const [{ projects }, { teams }] = await Promise.all([
+    getJson("/api/projects"),
+    getJson("/api/teams"),
+  ]);
   state.projects = projects;
+  state.teams = teams;
   elements.projectSelect.replaceChildren();
 
-  if (!projects.length) {
+  if (!projects.length && !teams.length) {
     const option = document.createElement("option");
-    option.textContent = "No accessible projects";
+    option.textContent = "No accessible projects or teams";
     elements.projectSelect.append(option);
     elements.projectSelect.disabled = true;
     setMessage(
       "info",
-      "No Linear projects found",
-      "The configured API key does not have access to any active projects.",
+      "No Linear scopes found",
+      "The configured API key does not have access to any active projects or teams.",
     );
     return;
   }
 
-  for (const project of projects) {
-    const option = document.createElement("option");
-    option.value = project.id;
-    option.textContent = projectLabel(project);
-    elements.projectSelect.append(option);
+  if (projects.length) {
+    const projectGroup = document.createElement("optgroup");
+    projectGroup.label = "Projects";
+    for (const project of projects) {
+      const option = document.createElement("option");
+      option.value = scopeValue("project", project.id);
+      option.textContent = projectLabel(project);
+      projectGroup.append(option);
+    }
+    elements.projectSelect.append(projectGroup);
   }
 
-  const projectId = chooseProject();
-  elements.projectSelect.value = projectId;
+  if (teams.length) {
+    const teamGroup = document.createElement("optgroup");
+    teamGroup.label = "Teams";
+    for (const team of teams) {
+      const option = document.createElement("option");
+      option.value = scopeValue("team", team.id);
+      option.textContent = `${team.name} · ${team.key}`;
+      teamGroup.append(option);
+    }
+    elements.projectSelect.append(teamGroup);
+  }
+
+  const selectedScope = chooseScope();
+  elements.projectSelect.value = selectedScope;
   elements.projectSelect.disabled = false;
-  await loadGraph(projectId);
+  await loadGraph(selectedScope);
 }
 
-async function loadGraph(projectId, { force = false, quiet = false } = {}) {
-  if (!projectId || state.loading) return;
+async function loadGraph(selectedScope, { force = false, quiet = false } = {}) {
+  const scope = parseScopeValue(selectedScope);
+  if (!scope || state.loading) return;
 
   state.loading = true;
   elements.refresh.disabled = true;
   if (!quiet) elements.syncStatus.textContent = "Reading Linear…";
 
   try {
-    const params = new URLSearchParams({ projectId });
+    const params = new URLSearchParams({
+      scopeType: scope.type,
+      scopeId: scope.id,
+    });
     if (force) params.set("refresh", "1");
     state.graph = await getJson(`/api/graph?${params}`);
-    state.laneProjectId = projectId;
-    state.laneOverrides = loadLaneOverrides(projectId);
+    state.laneScopeValue = selectedScope;
+    state.laneOverrides = loadLaneOverrides(selectedScope);
 
     if (
       state.selectedId &&
@@ -261,7 +334,7 @@ async function loadGraph(projectId, { force = false, quiet = false } = {}) {
     renderGraph();
     renderDetail();
   } catch (error) {
-    setMessage("error", "Could not load the project", error.message);
+    setMessage("error", "Could not load the scope", error.message);
     elements.syncStatus.textContent = "Refresh failed";
   } finally {
     state.loading = false;
@@ -321,7 +394,7 @@ function renderGraph() {
   svg.replaceChildren();
 
   const title = makeSvg("title", { id: "graph-title" });
-  title.textContent = "Linear project dependency graph";
+  title.textContent = "Linear issue dependency graph";
   const description = makeSvg("desc", { id: "graph-description" });
   description.textContent = `${nodes.length} issues arranged across ${columns.length} workflow status columns.`;
   svg.append(title, description);
@@ -345,14 +418,16 @@ function renderGraph() {
   }
 
   const viewportWidth = Math.max(320, elements.graphViewport.clientWidth - 4);
-  const columnGap = 20;
-  const columnWidth = Math.max(218, viewportWidth / columns.length);
-  const columnStride = columnWidth + columnGap;
-  const width = Math.max(
+  const {
+    canvasPadding,
+    columnStride,
+    columnWidth,
+    nodeWidth,
+    width,
+  } = graphLayout({
     viewportWidth,
-    columns.length * columnWidth + (columns.length - 1) * columnGap,
-  );
-  const nodeWidth = columnWidth - 20;
+    columnCount: columns.length,
+  });
   const nodeHeight = 96;
   const rowGap = 24;
   const headerHeight = 72;
@@ -405,7 +480,7 @@ function renderGraph() {
   const byId = new Map(nodes.map((node) => [node.id, node]));
 
   columns.forEach((column, columnIndex) => {
-    const x = columnIndex * columnStride;
+    const x = canvasPadding + columnIndex * columnStride;
     laneLayer.append(
       makeSvg("rect", {
         class: "lane",
@@ -611,6 +686,10 @@ function renderDetail() {
   elements.detailStatus.textContent = selected.status;
   elements.detailPriority.textContent = selected.priority;
   elements.detailTitle.textContent = selected.title;
+  const description = (selected.description ?? "").trim();
+  elements.detailDescription.textContent =
+    description || "No description provided.";
+  elements.detailDescription.classList.toggle("is-empty", !description);
   elements.detailLink.href = selected.url;
   const { blockedBy, blocks } = relatedIssueIds(
     state.graph.edges,
@@ -636,10 +715,10 @@ function clearSelection() {
 }
 
 elements.projectSelect.addEventListener("change", async () => {
-  const projectId = elements.projectSelect.value;
-  localStorage.setItem("linear-dep-graph.project", projectId);
+  const selectedScope = elements.projectSelect.value;
+  localStorage.setItem("linear-dep-graph.scope", selectedScope);
   state.selectedId = null;
-  await loadGraph(projectId);
+  await loadGraph(selectedScope);
 });
 
 elements.search.addEventListener("input", () => {
@@ -657,6 +736,10 @@ elements.edgeXrayToggle.addEventListener("change", () => {
     "is-xray",
     elements.edgeXrayToggle.checked,
   );
+});
+
+elements.accessibleColorToggle.addEventListener("change", () => {
+  setAccessibleColors(elements.accessibleColorToggle.checked);
 });
 
 elements.lanesOccupied.addEventListener("click", () => {
@@ -726,6 +809,10 @@ new ResizeObserver(() => {
 
 async function initialize() {
   try {
+    setAccessibleColors(
+      localStorage.getItem("linear-dep-graph.accessible-colors") === "1",
+      { persist: false },
+    );
     state.config = await getJson("/api/config");
     if (!state.config.configured) {
       elements.projectSelect.replaceChildren();
@@ -740,7 +827,7 @@ async function initialize() {
       return;
     }
 
-    await loadProjects();
+    await loadScopes();
     window.setInterval(() => {
       if (!document.hidden && elements.projectSelect.value) {
         loadGraph(elements.projectSelect.value, { quiet: true });

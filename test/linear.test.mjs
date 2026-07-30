@@ -1,10 +1,87 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import {
+  createLinearClient,
   normalizeIssues,
   normalizeWorkflowStates,
   requestLinear,
 } from "../src/linear.mjs";
+
+test("createLinearClient lists teams and builds a team-wide graph", async () => {
+  const fetchImpl = async (_url, options) => {
+    const { query } = JSON.parse(options.body);
+    if (query.includes("DependencyGraphTeams")) {
+      return {
+        ok: true,
+        json: async () => ({
+          data: {
+            teams: {
+              nodes: [
+                { id: "team-2", key: "B", name: "Beta" },
+                { id: "team-1", key: "A", name: "Alpha" },
+              ],
+              pageInfo: { hasNextPage: false, endCursor: null },
+            },
+          },
+        }),
+      };
+    }
+    if (query.includes("DependencyGraphTeam")) {
+      return {
+        ok: true,
+        json: async () => ({
+          data: {
+            team: {
+              states: {
+                nodes: [
+                  { name: "Todo", type: "unstarted", position: 1 },
+                  { name: "Done", type: "completed", position: 2 },
+                ],
+              },
+              issues: {
+                nodes: [
+                  {
+                    identifier: "A-1",
+                    title: "First issue",
+                    priority: 2,
+                    url: "https://linear.app/example/issue/A-1",
+                    updatedAt: "2026-01-01T00:00:00.000Z",
+                    state: {
+                      name: "Todo",
+                      type: "unstarted",
+                      position: 1,
+                    },
+                    parent: null,
+                    relations: { nodes: [] },
+                  },
+                ],
+                pageInfo: { hasNextPage: false, endCursor: null },
+              },
+            },
+          },
+        }),
+      };
+    }
+    throw new Error("Unexpected query");
+  };
+
+  const client = createLinearClient({
+    apiKey: "secret-key",
+    fetchImpl,
+  });
+  const teams = await client.listTeams();
+  const graph = await client.getTeamGraph("team-1");
+
+  assert.deepEqual(
+    teams.map((team) => team.name),
+    ["Alpha", "Beta"],
+  );
+  assert.equal(graph.nodes[0].id, "A-1");
+  assert.deepEqual(
+    graph.workflowStates.map((state) => state.name),
+    ["Todo", "Done"],
+  );
+});
 
 test("normalizeWorkflowStates merges team workflows and preserves position", () => {
   const states = normalizeWorkflowStates([
@@ -78,7 +155,7 @@ test("normalizeIssues creates dependency and parent edges without duplicates", (
   assert.equal(graph.nodes[1].priority, "Urgent");
 });
 
-test("normalizeIssues omits relationships outside the selected project", () => {
+test("normalizeIssues omits relationships outside the selected scope", () => {
   const graph = normalizeIssues([
     {
       identifier: "APP-1",
