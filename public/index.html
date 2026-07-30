@@ -22,6 +22,9 @@
         </div>
         <p class="masthead-note">
           See the work, sequence, and blockers.
+          <span id="demo-badge" class="demo-badge" hidden>
+            Static demo · fictional data
+          </span>
         </p>
       </header>
 
@@ -79,6 +82,14 @@
             <input id="accessible-color-toggle" type="checkbox">
             <span>Color-safe</span>
           </label>
+
+          <label
+            class="check-field"
+            title="Increase card, text, border, and graph contrast"
+          >
+            <input id="high-contrast-toggle" type="checkbox">
+            <span>High contrast</span>
+          </label>
         </div>
 
         <button id="refresh-button" class="button button-primary" type="button">
@@ -122,12 +133,28 @@
             target="_blank"
             rel="noreferrer"
           >Open in Linear ↗</a>
+          <button
+            id="detail-expand"
+            class="tray-expand-button"
+            type="button"
+            aria-expanded="false"
+            aria-controls="detail-description-region"
+            aria-label="Expand tray to show description"
+          >
+            <span>Description</span>
+            <i class="tray-chevron" aria-hidden="true"></i>
+          </button>
           <button id="clear-selection" class="text-button" type="button">
             Close tray
           </button>
         </div>
 
-        <div class="issue-description">
+        <div
+          id="detail-description-region"
+          class="issue-description"
+          aria-hidden="true"
+          inert
+        >
           <span class="relation-label">Description</span>
           <div id="detail-description" class="description-body"></div>
         </div>
@@ -181,7 +208,7 @@
       </section>
 
       <footer>
-        <span>API credentials stay on this machine.</span>
+        <span id="credential-note">API credentials stay on this machine.</span>
         <a href="https://linear.app/developers/graphql" target="_blank" rel="noreferrer">
           Linear GraphQL API ↗
         </a>

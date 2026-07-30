@@ -76,6 +76,72 @@ html.is-colorblind {
   }
 }
 
+html.is-high-contrast {
+  --paper: #ffffff;
+  --paper-raised: #ffffff;
+  --ink: #000000;
+  --muted: #333333;
+  --line: #4a4a4a;
+  --line-strong: #000000;
+  --status-started: #a9dcff;
+  --status-completed: #d7f27b;
+  --status-canceled: #ffc0b5;
+  --relation-blocker: #9c2500;
+  --relation-blocked: #005b96;
+  --relation-parent: #7a4a00;
+  --relation-child: #71388e;
+  --shadow: #000000;
+  --lane: rgb(0 0 0 / 8%);
+  --node: #ffffff;
+  --node-muted: #dedede;
+  --grid: rgb(0 0 0 / 11%);
+}
+
+@media (prefers-color-scheme: dark) {
+  html.is-high-contrast {
+    --paper: #050705;
+    --paper-raised: #0e120e;
+    --ink: #ffffff;
+    --muted: #d4d8d4;
+    --line: #aab2aa;
+    --line-strong: #ffffff;
+    --status-started: #155b7e;
+    --status-completed: #3c5700;
+    --status-canceled: #76271b;
+    --relation-blocker: #ff7054;
+    --relation-blocked: #55c7ff;
+    --relation-parent: #ffc857;
+    --relation-child: #d5adff;
+    --shadow: #000000;
+    --lane: rgb(255 255 255 / 9%);
+    --node: #111711;
+    --node-muted: #252c25;
+    --grid: rgb(255 255 255 / 12%);
+  }
+}
+
+html.is-high-contrast.is-colorblind {
+  --status-started: #a9dcff;
+  --status-completed: #ffe36e;
+  --status-canceled: #e5c4ff;
+  --relation-blocker: #8a4300;
+  --relation-blocked: #005b96;
+  --relation-parent: #00624f;
+  --relation-child: #87306f;
+}
+
+@media (prefers-color-scheme: dark) {
+  html.is-high-contrast.is-colorblind {
+    --status-started: #154f73;
+    --status-completed: #6a5700;
+    --status-canceled: #5e315f;
+    --relation-blocker: #ffb000;
+    --relation-blocked: #55c7ff;
+    --relation-parent: #45e0b0;
+    --relation-child: #ff9ee8;
+  }
+}
+
 * {
   box-sizing: border-box;
 }
@@ -163,12 +229,34 @@ h1 {
   text-align: right;
 }
 
+.demo-badge {
+  display: inline-block;
+  margin-left: 9px;
+  border: 1px solid var(--line);
+  color: var(--ink);
+  background: var(--acid);
+  padding: 2px 5px;
+  font-family: "SFMono-Regular", Consolas, monospace;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+html.is-demo .button-primary {
+  background: var(--acid);
+}
+
 .control-deck {
   position: relative;
   z-index: 30;
   display: grid;
-  grid-template-columns: minmax(230px, 1.2fr) minmax(200px, 1fr) auto auto;
-  align-items: end;
+  grid-template-columns:
+    minmax(230px, 1.1fr)
+    minmax(200px, 0.9fr)
+    minmax(420px, auto)
+    auto;
+  align-items: center;
   gap: 14px;
   margin: 14px 0 18px;
   padding: 15px;
@@ -220,16 +308,22 @@ select:disabled {
 }
 
 .view-toggles {
-  display: flex;
-  align-items: flex-end;
-  flex-wrap: wrap;
-  gap: 14px;
+  display: grid;
+  grid-template-columns: repeat(3, max-content);
+  grid-auto-rows: 36px;
+  align-items: center;
+  column-gap: 14px;
+  row-gap: 0;
 }
 
 .check-field input {
   width: 17px;
   height: 17px;
   accent-color: var(--coral);
+}
+
+.view-toggles .check-field {
+  height: 36px;
 }
 
 .lane-picker {
@@ -242,7 +336,7 @@ select:disabled {
 .lane-picker summary {
   display: flex;
   min-width: 106px;
-  height: 42px;
+  height: 36px;
   align-items: center;
   justify-content: space-between;
   gap: 12px;
@@ -452,6 +546,7 @@ select:disabled {
   transition:
     transform 320ms cubic-bezier(0.22, 1, 0.36, 1),
     opacity 180ms ease,
+    max-height 280ms cubic-bezier(0.22, 1, 0.36, 1),
     visibility 0s linear 320ms;
 }
 
@@ -463,6 +558,7 @@ select:disabled {
   transition:
     transform 320ms cubic-bezier(0.22, 1, 0.36, 1),
     opacity 180ms ease,
+    max-height 280ms cubic-bezier(0.22, 1, 0.36, 1),
     visibility 0s;
 }
 
@@ -536,11 +632,71 @@ select:disabled {
   text-align: center;
 }
 
+.tray-expand-button {
+  display: inline-flex;
+  min-height: 30px;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  border: 0;
+  color: var(--muted);
+  background: transparent;
+  padding: 3px 5px;
+  cursor: pointer;
+  font-family: "SFMono-Regular", Consolas, monospace;
+  font-size: 10px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.tray-expand-button:hover {
+  color: var(--ink);
+}
+
+.tray-chevron {
+  width: 8px;
+  height: 8px;
+  border-right: 1.5px solid currentcolor;
+  border-bottom: 1.5px solid currentcolor;
+  transform: translateY(2px) rotate(225deg);
+  transition: transform 180ms ease;
+}
+
+.issue-detail.is-expanded .tray-chevron {
+  transform: translateY(-2px) rotate(45deg);
+}
+
 .issue-description {
   grid-column: 1 / -1;
   min-width: 0;
-  border-top: 1px solid var(--line);
+  max-height: 0;
+  overflow: hidden;
+  border-top: 1px solid transparent;
+  padding-top: 0;
+  opacity: 0;
+  pointer-events: none;
+  visibility: hidden;
+  transition:
+    max-height 280ms cubic-bezier(0.22, 1, 0.36, 1),
+    padding-top 220ms ease,
+    border-color 220ms ease,
+    opacity 160ms ease,
+    visibility 0s linear 280ms;
+}
+
+.issue-detail.is-expanded .issue-description {
+  max-height: min(34vh, 300px);
+  border-top-color: var(--line);
   padding-top: 13px;
+  opacity: 1;
+  pointer-events: auto;
+  visibility: visible;
+  transition:
+    max-height 280ms cubic-bezier(0.22, 1, 0.36, 1),
+    padding-top 220ms ease,
+    border-color 220ms ease,
+    opacity 220ms 70ms ease,
+    visibility 0s;
 }
 
 .description-body {
@@ -550,8 +706,104 @@ select:disabled {
   color: var(--ink);
   font-size: 13px;
   line-height: 1.55;
+  overflow-wrap: anywhere;
   scrollbar-color: var(--line) transparent;
-  white-space: pre-wrap;
+}
+
+.description-body > :first-child {
+  margin-top: 0;
+}
+
+.description-body > :last-child {
+  margin-bottom: 0;
+}
+
+.description-body p,
+.description-body ul,
+.description-body ol,
+.description-body blockquote,
+.description-body pre,
+.description-body table {
+  margin: 0 0 0.8em;
+}
+
+.description-body h1,
+.description-body h2,
+.description-body h3,
+.description-body h4,
+.description-body h5,
+.description-body h6 {
+  margin: 1.1em 0 0.45em;
+  color: var(--ink);
+  font-family: "IBM Plex Mono", "SFMono-Regular", Consolas, monospace;
+  font-size: 1em;
+  line-height: 1.3;
+}
+
+.description-body ul,
+.description-body ol {
+  padding-left: 1.45em;
+}
+
+.description-body li + li {
+  margin-top: 0.25em;
+}
+
+.description-body a {
+  color: var(--coral);
+  text-decoration-thickness: 1px;
+  text-underline-offset: 0.18em;
+}
+
+.description-body a:hover {
+  text-decoration-thickness: 2px;
+}
+
+.description-body code {
+  border: 1px solid var(--line);
+  background: var(--node-muted);
+  padding: 0.08em 0.28em;
+  font-family: "SFMono-Regular", Consolas, monospace;
+  font-size: 0.92em;
+}
+
+.description-body pre {
+  overflow-x: auto;
+  border: 1px solid var(--line);
+  background: var(--node-muted);
+  padding: 10px 12px;
+}
+
+.description-body pre code {
+  border: 0;
+  background: transparent;
+  padding: 0;
+}
+
+.description-body blockquote {
+  border-left: 2px solid var(--coral);
+  margin-left: 0;
+  padding-left: 12px;
+  color: var(--muted);
+}
+
+.description-body hr {
+  border: 0;
+  border-top: 1px solid var(--line);
+  margin: 1em 0;
+}
+
+.description-body table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.description-body th,
+.description-body td {
+  border: 1px solid var(--line);
+  padding: 5px 7px;
+  text-align: left;
+  vertical-align: top;
 }
 
 .description-body.is-empty {
@@ -816,6 +1068,16 @@ select:disabled {
   transition: fill-opacity 160ms ease;
 }
 
+html.is-high-contrast .issue-node rect,
+html.is-high-contrast .lane {
+  stroke: var(--line-strong);
+  stroke-width: 1.5;
+}
+
+html.is-high-contrast .node-priority {
+  fill: var(--ink);
+}
+
 .issue-node[data-status-type="triage"] rect,
 .issue-node[data-status-type="backlog"] rect {
   fill: var(--node-muted);
@@ -969,11 +1231,17 @@ footer a {
   }
 }
 
-@media (max-width: 980px) {
+@media (max-width: 1180px) {
   .control-deck {
     grid-template-columns: 1fr 1fr;
   }
 
+  .view-toggles {
+    grid-template-columns: repeat(2, max-content);
+  }
+}
+
+@media (max-width: 980px) {
   .issue-detail {
     grid-template-columns: 1fr 1fr;
     max-height: 62vh;
@@ -1007,6 +1275,15 @@ footer a {
   .control-deck {
     grid-template-columns: 1fr;
     box-shadow: 4px 4px 0 var(--shadow);
+  }
+
+  .view-toggles {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    width: 100%;
+  }
+
+  .lane-picker summary {
+    width: 100%;
   }
 
   .issue-detail {

@@ -18,7 +18,10 @@ const elements = {
   parentToggle: document.querySelector("#parent-toggle"),
   edgeXrayToggle: document.querySelector("#edge-xray-toggle"),
   accessibleColorToggle: document.querySelector("#accessible-color-toggle"),
+  highContrastToggle: document.querySelector("#high-contrast-toggle"),
   refresh: document.querySelector("#refresh-button"),
+  demoBadge: document.querySelector("#demo-badge"),
+  credentialNote: document.querySelector("#credential-note"),
   message: document.querySelector("#message"),
   detail: document.querySelector("#issue-detail"),
   detailId: document.querySelector("#detail-id"),
@@ -29,6 +32,10 @@ const elements = {
   detailBlockedBy: document.querySelector("#detail-blocked-by"),
   detailBlocks: document.querySelector("#detail-blocks"),
   detailLink: document.querySelector("#detail-link"),
+  detailExpand: document.querySelector("#detail-expand"),
+  detailDescriptionRegion: document.querySelector(
+    "#detail-description-region",
+  ),
   clearSelection: document.querySelector("#clear-selection"),
   graphViewport: document.querySelector("#graph-viewport"),
   graph: document.querySelector("#dependency-graph"),
@@ -44,6 +51,8 @@ const state = {
   search: "",
   showParents: true,
   accessibleColors: false,
+  highContrast: false,
+  detailExpanded: false,
   laneOverrides: {},
   laneScopeValue: null,
   loading: false,
@@ -60,6 +69,9 @@ function makeSvg(name, attributes = {}) {
 }
 
 async function getJson(path) {
+  if (globalThis.linearDepGraphDemo) {
+    return globalThis.linearDepGraphDemo.getJson(path);
+  }
   const response = await fetch(path, {
     headers: { accept: "application/json" },
   });
@@ -169,6 +181,35 @@ function setAccessibleColors(enabled, { persist = true } = {}) {
   }
 }
 
+function setHighContrast(enabled, { persist = true } = {}) {
+  state.highContrast = enabled;
+  elements.highContrastToggle.checked = enabled;
+  document.documentElement.classList.toggle("is-high-contrast", enabled);
+  if (persist) {
+    localStorage.setItem(
+      "linear-dep-graph.high-contrast",
+      enabled ? "1" : "0",
+    );
+  }
+}
+
+function setDetailExpanded(expanded) {
+  state.detailExpanded = expanded;
+  elements.detail.classList.toggle("is-expanded", expanded);
+  elements.detailExpand.setAttribute("aria-expanded", String(expanded));
+  elements.detailExpand.setAttribute(
+    "aria-label",
+    expanded
+      ? "Collapse tray description"
+      : "Expand tray to show description",
+  );
+  elements.detailDescriptionRegion.setAttribute(
+    "aria-hidden",
+    String(!expanded),
+  );
+  elements.detailDescriptionRegion.inert = !expanded;
+}
+
 function allLaneColumns() {
   if (!state.graph) return [];
   return workflowColumns(state.graph.nodes, state.graph.workflowStates);
@@ -267,18 +308,6 @@ async function loadScopes() {
     return;
   }
 
-  if (projects.length) {
-    const projectGroup = document.createElement("optgroup");
-    projectGroup.label = "Projects";
-    for (const project of projects) {
-      const option = document.createElement("option");
-      option.value = scopeValue("project", project.id);
-      option.textContent = projectLabel(project);
-      projectGroup.append(option);
-    }
-    elements.projectSelect.append(projectGroup);
-  }
-
   if (teams.length) {
     const teamGroup = document.createElement("optgroup");
     teamGroup.label = "Teams";
@@ -289,6 +318,18 @@ async function loadScopes() {
       teamGroup.append(option);
     }
     elements.projectSelect.append(teamGroup);
+  }
+
+  if (projects.length) {
+    const projectGroup = document.createElement("optgroup");
+    projectGroup.label = "Projects";
+    for (const project of projects) {
+      const option = document.createElement("option");
+      option.value = scopeValue("project", project.id);
+      option.textContent = projectLabel(project);
+      projectGroup.append(option);
+    }
+    elements.projectSelect.append(projectGroup);
   }
 
   const selectedScope = chooseScope();
@@ -676,6 +717,7 @@ function renderDetail() {
     (node) => node.id === state.selectedId,
   );
   if (!selected) {
+    setDetailExpanded(false);
     elements.detail.classList.remove("is-open");
     elements.detail.setAttribute("aria-hidden", "true");
     elements.detail.inert = true;
@@ -687,8 +729,12 @@ function renderDetail() {
   elements.detailPriority.textContent = selected.priority;
   elements.detailTitle.textContent = selected.title;
   const description = (selected.description ?? "").trim();
-  elements.detailDescription.textContent =
-    description || "No description provided.";
+  if (description) {
+    elements.detailDescription.innerHTML =
+      selected.descriptionHtml || "";
+  } else {
+    elements.detailDescription.textContent = "No description provided.";
+  }
   elements.detailDescription.classList.toggle("is-empty", !description);
   elements.detailLink.href = selected.url;
   const { blockedBy, blocks } = relatedIssueIds(
@@ -742,6 +788,10 @@ elements.accessibleColorToggle.addEventListener("change", () => {
   setAccessibleColors(elements.accessibleColorToggle.checked);
 });
 
+elements.highContrastToggle.addEventListener("change", () => {
+  setHighContrast(elements.highContrastToggle.checked);
+});
+
 elements.lanesOccupied.addEventListener("click", () => {
   state.laneOverrides = {};
   applyLaneVisibility();
@@ -759,6 +809,10 @@ elements.refresh.addEventListener("click", () =>
 );
 
 elements.clearSelection.addEventListener("click", clearSelection);
+
+elements.detailExpand.addEventListener("click", () => {
+  setDetailExpanded(!state.detailExpanded);
+});
 
 for (const container of [
   elements.detailBlockedBy,
@@ -789,6 +843,10 @@ document.addEventListener("keydown", (event) => {
     elements.lanePicker.open = false;
     return;
   }
+  if (state.detailExpanded) {
+    setDetailExpanded(false);
+    return;
+  }
   if (state.selectedId) clearSelection();
 });
 
@@ -813,7 +871,18 @@ async function initialize() {
       localStorage.getItem("linear-dep-graph.accessible-colors") === "1",
       { persist: false },
     );
+    setHighContrast(
+      localStorage.getItem("linear-dep-graph.high-contrast") === "1",
+      { persist: false },
+    );
     state.config = await getJson("/api/config");
+    if (state.config.demo) {
+      document.documentElement.classList.add("is-demo");
+      elements.demoBadge.hidden = false;
+      elements.credentialNote.textContent =
+        "Static demo · no account or API key required.";
+      elements.refresh.textContent = "Reset demo";
+    }
     if (!state.config.configured) {
       elements.projectSelect.replaceChildren();
       const option = document.createElement("option");

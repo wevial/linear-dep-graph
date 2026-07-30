@@ -1,3 +1,5 @@
+import { renderMarkdown } from "./markdown.mjs";
+
 const PROJECTS_QUERY = `
   query DependencyGraphProjects($after: String) {
     projects(first: 100, after: $after, includeArchived: false) {
@@ -238,6 +240,7 @@ export function normalizeIssues(issues) {
       id: issue.identifier,
       title: issue.title,
       description: issue.description ?? "",
+      descriptionHtml: renderMarkdown(issue.description),
       status: issue.state?.name ?? "Unknown",
       statusType: issue.state?.type ?? "unknown",
       statusPosition: issue.state?.position ?? Number.MAX_SAFE_INTEGER,

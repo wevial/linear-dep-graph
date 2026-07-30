@@ -12,8 +12,9 @@
     "background": "node scripts/background.mjs",
     "stop": "node scripts/background.mjs --stop",
     "dev": "node --watch src/server.mjs",
+    "build:demo": "node scripts/build-demo.mjs",
     "test": "node --test",
-    "check": "node --check src/config.mjs && node --check src/linear.mjs && node --check src/server.mjs && node --check scripts/background.mjs && node --check public/graph-data.js && node --check public/graph-geometry.js && node --check public/app.js && node --test"
+    "check": "node --check src/config.mjs && node --check src/markdown.mjs && node --check src/linear.mjs && node --check src/server.mjs && node --check scripts/background.mjs && node --check scripts/build-demo.mjs && node --check public/demo-data.js && node --check public/graph-data.js && node --check public/graph-geometry.js && node --check public/app.js && node --test"
   },
   "keywords": [
     "linear",
@@ -21,5 +22,9 @@
     "issues",
     "project-management",
     "visualization"
-  ]
+  ],
+  "dependencies": {
+    "marked": "^18.0.7",
+    "sanitize-html": "^2.17.6"
+  }
 }
