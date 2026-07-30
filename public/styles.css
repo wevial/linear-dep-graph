@@ -135,6 +135,8 @@ h1 {
 }
 
 .control-deck {
+  position: relative;
+  z-index: 30;
   display: grid;
   grid-template-columns: minmax(230px, 1.2fr) minmax(200px, 1fr) auto auto;
   align-items: end;
@@ -191,6 +193,7 @@ select:disabled {
 .view-toggles {
   display: flex;
   align-items: flex-end;
+  flex-wrap: wrap;
   gap: 14px;
 }
 
@@ -198,6 +201,130 @@ select:disabled {
   width: 17px;
   height: 17px;
   accent-color: var(--coral);
+}
+
+.lane-picker {
+  position: relative;
+  align-self: center;
+  font-family: "SFMono-Regular", Consolas, monospace;
+  font-size: 10px;
+}
+
+.lane-picker summary {
+  display: flex;
+  min-width: 106px;
+  height: 42px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  border: 1.5px solid var(--line-strong);
+  color: var(--muted);
+  background: var(--paper);
+  padding: 0 10px;
+  cursor: pointer;
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  list-style: none;
+  text-transform: uppercase;
+}
+
+.lane-picker summary::-webkit-details-marker {
+  display: none;
+}
+
+.lane-picker summary::after {
+  content: "▾";
+  color: var(--ink);
+}
+
+.lane-picker[open] summary::after {
+  content: "▴";
+}
+
+.lane-picker.has-hidden-issues summary {
+  border-color: var(--coral);
+}
+
+.lane-picker summary strong {
+  color: var(--ink);
+  font-size: 10px;
+}
+
+.lane-menu {
+  position: absolute;
+  z-index: 35;
+  top: calc(100% + 7px);
+  right: 0;
+  width: min(340px, calc(100vw - 48px));
+  border: 2px solid var(--line-strong);
+  background: var(--paper-raised);
+  padding: 12px;
+  box-shadow: 5px 5px 0 var(--shadow);
+}
+
+.lane-menu-heading {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 9px;
+  color: var(--muted);
+}
+
+.lane-menu-heading strong {
+  color: var(--ink);
+  font-size: 10px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.lane-options {
+  display: grid;
+  gap: 3px;
+}
+
+.lane-option {
+  display: grid;
+  grid-template-columns: 18px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 8px;
+  min-height: 31px;
+  border-bottom: 1px solid color-mix(in srgb, var(--line) 40%, transparent);
+  color: var(--ink);
+  cursor: pointer;
+}
+
+.lane-option input {
+  width: 15px;
+  height: 15px;
+  accent-color: var(--acid);
+}
+
+.lane-option small {
+  color: var(--muted);
+  font-size: 9px;
+}
+
+.lane-menu-actions {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  padding-top: 10px;
+}
+
+.lane-menu-actions button {
+  border: 0;
+  color: var(--muted);
+  background: none;
+  padding: 2px 0;
+  cursor: pointer;
+  font: inherit;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.lane-menu-actions button:hover {
+  color: var(--ink);
 }
 
 .button {
@@ -829,6 +956,11 @@ footer a {
   .graph-bar {
     align-items: flex-start;
     flex-direction: column;
+  }
+
+  .lane-menu {
+    right: auto;
+    left: 0;
   }
 
   .legend-content,

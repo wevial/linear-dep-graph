@@ -1,9 +1,20 @@
 import { edgePath } from "./graph-geometry.js";
-import { relatedIssueIds, workflowColumns } from "./graph-data.js";
+import {
+  relatedIssueIds,
+  resolveLaneVisibility,
+  workflowColumns,
+  workflowLaneKey,
+} from "./graph-data.js";
 
 const elements = {
   projectSelect: document.querySelector("#project-select"),
   search: document.querySelector("#issue-search"),
+  lanePicker: document.querySelector("#lane-picker"),
+  lanePickerSummary: document.querySelector("#lane-picker-summary"),
+  laneOptions: document.querySelector("#lane-options"),
+  laneHiddenNote: document.querySelector("#lane-hidden-note"),
+  lanesOccupied: document.querySelector("#lanes-occupied"),
+  lanesAll: document.querySelector("#lanes-all"),
   parentToggle: document.querySelector("#parent-toggle"),
   edgeXrayToggle: document.querySelector("#edge-xray-toggle"),
   refresh: document.querySelector("#refresh-button"),
@@ -29,6 +40,8 @@ const state = {
   selectedId: null,
   search: "",
   showParents: true,
+  laneOverrides: {},
+  laneProjectId: null,
   loading: false,
 };
 
@@ -85,6 +98,105 @@ function chooseProject() {
   );
 }
 
+function laneStorageKey(projectId) {
+  return `linear-dep-graph.lanes.${projectId}`;
+}
+
+function loadLaneOverrides(projectId) {
+  try {
+    const value = JSON.parse(localStorage.getItem(laneStorageKey(projectId)));
+    return value && typeof value === "object" && !Array.isArray(value)
+      ? value
+      : {};
+  } catch {
+    return {};
+  }
+}
+
+function saveLaneOverrides() {
+  if (!state.laneProjectId) return;
+  localStorage.setItem(
+    laneStorageKey(state.laneProjectId),
+    JSON.stringify(state.laneOverrides),
+  );
+}
+
+function allLaneColumns() {
+  if (!state.graph) return [];
+  return workflowColumns(state.graph.nodes, state.graph.workflowStates);
+}
+
+function currentLaneVisibility() {
+  return resolveLaneVisibility(allLaneColumns(), state.laneOverrides);
+}
+
+function selectedIssueIsVisible(visibleKeys) {
+  if (!state.selectedId) return true;
+  const selected = state.graph.nodes.find(
+    (node) => node.id === state.selectedId,
+  );
+  return (
+    !selected ||
+    visibleKeys.has(
+      workflowLaneKey({
+        type: selected.statusType,
+        name: selected.status,
+      }),
+    )
+  );
+}
+
+function applyLaneVisibility() {
+  const { visibleKeys } = currentLaneVisibility();
+  if (!selectedIssueIsVisible(visibleKeys)) state.selectedId = null;
+  saveLaneOverrides();
+  renderLanePicker();
+  renderGraph();
+  renderDetail();
+}
+
+function renderLanePicker() {
+  const columns = allLaneColumns();
+  const { visibleKeys, visibleCount, hiddenIssueCount } =
+    currentLaneVisibility();
+  elements.laneOptions.replaceChildren();
+
+  for (const column of columns) {
+    const label = document.createElement("label");
+    label.className = "lane-option";
+    const input = document.createElement("input");
+    input.type = "checkbox";
+    input.checked = visibleKeys.has(column.key);
+    input.setAttribute("aria-label", `Show ${column.name} lane`);
+    const name = document.createElement("span");
+    name.textContent = column.name;
+    const count = document.createElement("small");
+    count.textContent = `${column.nodes.length} ${
+      column.nodes.length === 1 ? "issue" : "issues"
+    }`;
+
+    input.addEventListener("change", () => {
+      state.laneOverrides[column.key] = input.checked;
+      applyLaneVisibility();
+    });
+    label.append(input, name, count);
+    elements.laneOptions.append(label);
+  }
+
+  elements.lanePickerSummary.textContent = hiddenIssueCount
+    ? `${visibleCount}/${columns.length} · ${hiddenIssueCount} hidden`
+    : `${visibleCount}/${columns.length}`;
+  elements.laneHiddenNote.textContent = hiddenIssueCount
+    ? `${hiddenIssueCount} ${
+        hiddenIssueCount === 1 ? "issue" : "issues"
+      } hidden`
+    : "No issues hidden";
+  elements.lanePicker.classList.toggle(
+    "has-hidden-issues",
+    hiddenIssueCount > 0,
+  );
+}
+
 async function loadProjects() {
   const { projects } = await getJson("/api/projects");
   state.projects = projects;
@@ -127,6 +239,8 @@ async function loadGraph(projectId, { force = false, quiet = false } = {}) {
     const params = new URLSearchParams({ projectId });
     if (force) params.set("refresh", "1");
     state.graph = await getJson(`/api/graph?${params}`);
+    state.laneProjectId = projectId;
+    state.laneOverrides = loadLaneOverrides(projectId);
 
     if (
       state.selectedId &&
@@ -143,6 +257,7 @@ async function loadGraph(projectId, { force = false, quiet = false } = {}) {
       minute: "2-digit",
     })}`;
     clearMessage();
+    renderLanePicker();
     renderGraph();
     renderDetail();
   } catch (error) {
@@ -156,14 +271,19 @@ async function loadGraph(projectId, { force = false, quiet = false } = {}) {
 
 function visibleNodes() {
   if (!state.graph) return [];
+  const { visibleKeys } = currentLaneVisibility();
   const query = state.search.trim().toLocaleLowerCase();
-  if (!query) return state.graph.nodes;
-  return state.graph.nodes.filter((node) =>
-    [node.id, node.title, node.status, node.priority]
+  return state.graph.nodes.filter((node) => {
+    const laneIsVisible = visibleKeys.has(
+      workflowLaneKey({ type: node.statusType, name: node.status }),
+    );
+    if (!laneIsVisible) return false;
+    if (!query) return true;
+    return [node.id, node.title, node.status, node.priority]
       .join(" ")
       .toLocaleLowerCase()
-      .includes(query),
-  );
+      .includes(query);
+  });
 }
 
 function wrapTitle(title, maxCharacters = 28) {
@@ -192,7 +312,12 @@ function wrapTitle(title, maxCharacters = 28) {
 function renderGraph() {
   const svg = elements.graph;
   const nodes = visibleNodes();
-  const columns = workflowColumns(nodes, state.graph?.workflowStates);
+  const { visibleKeys } = currentLaneVisibility();
+  const workflowStates = (state.graph?.workflowStates ?? []).filter(
+    (workflowState) =>
+      visibleKeys.has(workflowLaneKey(workflowState)),
+  );
+  const columns = workflowColumns(nodes, workflowStates);
   svg.replaceChildren();
 
   const title = makeSvg("title", { id: "graph-title" });
@@ -201,7 +326,7 @@ function renderGraph() {
   description.textContent = `${nodes.length} issues arranged across ${columns.length} workflow status columns.`;
   svg.append(title, description);
 
-  if (!nodes.length) {
+  if (!columns.length) {
     const width = Math.max(720, elements.graphViewport.clientWidth - 4);
     svg.setAttribute("viewBox", `0 0 ${width} 500`);
     svg.style.width = `${width}px`;
@@ -213,7 +338,7 @@ function renderGraph() {
       "text-anchor": "middle",
     });
     empty.textContent = state.graph
-      ? "No issues match this search."
+      ? "Choose at least one status lane."
       : "Choose a project to begin.";
     svg.append(empty);
     return;
@@ -534,6 +659,18 @@ elements.edgeXrayToggle.addEventListener("change", () => {
   );
 });
 
+elements.lanesOccupied.addEventListener("click", () => {
+  state.laneOverrides = {};
+  applyLaneVisibility();
+});
+
+elements.lanesAll.addEventListener("click", () => {
+  state.laneOverrides = Object.fromEntries(
+    allLaneColumns().map((column) => [column.key, true]),
+  );
+  applyLaneVisibility();
+});
+
 elements.refresh.addEventListener("click", () =>
   loadGraph(elements.projectSelect.value, { force: true }),
 );
@@ -564,7 +701,21 @@ elements.graph.addEventListener("keydown", (event) => {
 });
 
 document.addEventListener("keydown", (event) => {
-  if (event.key === "Escape" && state.selectedId) clearSelection();
+  if (event.key !== "Escape") return;
+  if (elements.lanePicker.open) {
+    elements.lanePicker.open = false;
+    return;
+  }
+  if (state.selectedId) clearSelection();
+});
+
+document.addEventListener("click", (event) => {
+  if (
+    elements.lanePicker.open &&
+    !elements.lanePicker.contains(event.target)
+  ) {
+    elements.lanePicker.open = false;
+  }
 });
 
 let resizeFrame;

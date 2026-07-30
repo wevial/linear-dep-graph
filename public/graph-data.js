@@ -13,11 +13,15 @@ const statusTypeOrder = new Map([
   ["canceled", 5],
 ]);
 
+export function workflowLaneKey({ type, name }) {
+  return `${type}\u0000${name}`;
+}
+
 export function workflowColumns(nodes, workflowStates = []) {
   const columns = new Map();
 
   const addColumn = ({ name, type, position }) => {
-    const key = `${type}\u0000${name}`;
+    const key = workflowLaneKey({ type, name });
     if (!columns.has(key)) {
       columns.set(key, {
         key,
@@ -51,6 +55,30 @@ export function workflowColumns(nodes, workflowStates = []) {
       left.position - right.position ||
       left.name.localeCompare(right.name),
   );
+}
+
+export function resolveLaneVisibility(columns, overrides = {}) {
+  const visibleKeys = new Set();
+  let hiddenIssueCount = 0;
+
+  for (const column of columns) {
+    const hasOverride = Object.prototype.hasOwnProperty.call(
+      overrides,
+      column.key,
+    );
+    const visible = hasOverride
+      ? Boolean(overrides[column.key])
+      : column.nodes.length > 0;
+
+    if (visible) visibleKeys.add(column.key);
+    else hiddenIssueCount += column.nodes.length;
+  }
+
+  return {
+    visibleKeys,
+    visibleCount: visibleKeys.size,
+    hiddenIssueCount,
+  };
 }
 
 export function relatedIssueIds(edges, issueId) {

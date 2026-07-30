@@ -44,6 +44,24 @@
         </label>
 
         <div class="view-toggles">
+          <details id="lane-picker" class="lane-picker">
+            <summary>
+              <span>Lanes</span>
+              <strong id="lane-picker-summary">0/0</strong>
+            </summary>
+            <div class="lane-menu">
+              <div class="lane-menu-heading">
+                <strong>Visible status lanes</strong>
+                <span id="lane-hidden-note">No issues hidden</span>
+              </div>
+              <div id="lane-options" class="lane-options"></div>
+              <div class="lane-menu-actions">
+                <button id="lanes-occupied" type="button">Occupied (auto)</button>
+                <button id="lanes-all" type="button">Show all</button>
+              </div>
+            </div>
+          </details>
+
           <label class="check-field">
             <input id="parent-toggle" type="checkbox" checked>
             <span>Parent links</span>
